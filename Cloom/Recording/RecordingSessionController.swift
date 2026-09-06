@@ -58,13 +58,15 @@ struct RecordingSessionConfiguration {
 }
 
 enum RecordingSessionError: Error, LocalizedError {
-    case missingDevices
+    case missingCamera
+    case missingMicrophone
     case operationInProgress
     case invalidEpoch
 
     var errorDescription: String? {
         switch self {
-        case .missingDevices: "Select a camera and microphone before recording."
+        case .missingCamera: "Select a camera or turn camera capture off before recording."
+        case .missingMicrophone: "Select a microphone or turn microphone capture off before recording."
         case .operationInProgress: "A recording operation is already in progress."
         case .invalidEpoch: "The recording clock returned an invalid time."
         }
@@ -119,9 +121,13 @@ final class RecordingSessionController {
             initialOverlay.shape = configuration.settings.overlayShape
             initialOverlay.size = configuration.settings.overlaySize
             overlayStore = try OverlayEventStore(fileURL: workspace.overlayURL, initialState: initialOverlay)
-            guard let cameraID = configuration.settings.cameraDeviceID, !cameraID.isEmpty,
-                  let microphoneID = configuration.settings.microphoneDeviceID, !microphoneID.isEmpty else {
-                throw RecordingSessionError.missingDevices
+            if configuration.settings.includeCamera,
+               configuration.settings.cameraDeviceID?.isEmpty != false {
+                throw RecordingSessionError.missingCamera
+            }
+            if configuration.settings.includeMicrophone,
+               configuration.settings.microphoneDeviceID?.isEmpty != false {
+                throw RecordingSessionError.missingMicrophone
             }
             try coordinator.beginCountdown()
             try await countdownSleeper.sleepForCountdown()
@@ -131,11 +137,15 @@ final class RecordingSessionController {
             self.epoch = epoch
             let streamConfiguration = ScreenStreamConfigurationFactory.make(
                 includeSystemAudio: configuration.settings.includeSystemAudio,
-                microphoneDeviceID: microphoneID
+                includeMicrophone: configuration.settings.includeMicrophone,
+                microphoneDeviceID: configuration.settings.microphoneDeviceID
             )
-            attemptedCamera = true
-            try await cameraCapture.start(deviceID: cameraID, workspace: workspace, epoch: epoch)
-            try Task.checkCancellation()
+            if configuration.settings.includeCamera,
+               let cameraID = configuration.settings.cameraDeviceID {
+                attemptedCamera = true
+                try await cameraCapture.start(deviceID: cameraID, workspace: workspace, epoch: epoch)
+                try Task.checkCancellation()
+            }
             attemptedScreen = true
             try await screenCapture.start(selection: configuration.source, configuration: streamConfiguration,
                                           workspace: workspace, epoch: epoch)
@@ -162,8 +172,10 @@ final class RecordingSessionController {
         defer { operationInProgress = false }
         var failure: Error?
         do { try await screenCapture.stop() } catch { failure = error }
-        do { try await cameraCapture.stop() } catch {
-            if failure == nil { failure = error } else { cleanupConcerns.append(error.localizedDescription) }
+        if workspace.manifest.settings.includeCamera {
+            do { try await cameraCapture.stop() } catch {
+                if failure == nil { failure = error } else { cleanupConcerns.append(error.localizedDescription) }
+            }
         }
         do { try overlayStore?.finish() } catch {
             if failure == nil { failure = error } else { cleanupConcerns.append(error.localizedDescription) }

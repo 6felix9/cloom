@@ -22,9 +22,11 @@ final class ScreenCaptureService: ScreenCapturing {
         let screen = CaptureMediaTrack(url: workspace.screenURL,
                                        format: .video(width: configuration.width, height: configuration.height),
                                        epoch: epoch, label: "com.tzefoong.Cloom.screen")
-        let microphone = CaptureMediaTrack(url: workspace.microphoneURL, format: .audio,
-                                           epoch: epoch, label: "com.tzefoong.Cloom.microphone")
-        tracks = [screen, microphone]
+        let microphone = configuration.captureMicrophone
+            ? CaptureMediaTrack(url: workspace.microphoneURL, format: .audio,
+                                epoch: epoch, label: "com.tzefoong.Cloom.microphone")
+            : nil
+        tracks = [screen] + [microphone].compactMap { $0 }
         let audio = configuration.capturesAudio
             ? CaptureMediaTrack(url: workspace.systemAudioURL, format: .audio,
                                 epoch: epoch, label: "com.tzefoong.Cloom.system-audio") : nil
@@ -35,7 +37,9 @@ final class ScreenCaptureService: ScreenCapturing {
         self.stream = stream
         do {
             try stream.addStreamOutput(receiver, type: .screen, sampleHandlerQueue: screen.queue)
-            try stream.addStreamOutput(receiver, type: .microphone, sampleHandlerQueue: microphone.queue)
+            if let microphone {
+                try stream.addStreamOutput(receiver, type: .microphone, sampleHandlerQueue: microphone.queue)
+            }
             if let audio {
                 do { try stream.addStreamOutput(receiver, type: .audio, sampleHandlerQueue: audio.queue) }
                 catch {
@@ -51,7 +55,7 @@ final class ScreenCaptureService: ScreenCapturing {
                 let failure = error as NSError
                 guard configuration.capturesAudio, failure.domain == SCStreamErrorDomain,
                       failure.code == SCStreamError.Code.failedToStartAudioCapture.rawValue else { throw error }
-                warn("System audio could not start; continuing with the microphone: \(error.localizedDescription)")
+                warn("System audio could not start; continuing without it: \(error.localizedDescription)")
                 // A fresh stream avoids carrying failed start state into the microphone-only retry.
                 try? await stream.stopCapture()
                 configuration.capturesAudio = false
@@ -60,7 +64,9 @@ final class ScreenCaptureService: ScreenCapturing {
                 self.receiver = fallback
                 self.stream = retry
                 try retry.addStreamOutput(fallback, type: .screen, sampleHandlerQueue: screen.queue)
-                try retry.addStreamOutput(fallback, type: .microphone, sampleHandlerQueue: microphone.queue)
+                if let microphone {
+                    try retry.addStreamOutput(fallback, type: .microphone, sampleHandlerQueue: microphone.queue)
+                }
                 try await retry.startCapture()
             }
         } catch {
@@ -105,13 +111,13 @@ final class ScreenCaptureService: ScreenCapturing {
 // Track state belongs to the configured callback queues; the delegate error has its own lock.
 private final class ScreenStreamReceiver: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     private let screen: CaptureMediaTrack
-    private let microphone: CaptureMediaTrack
+    private let microphone: CaptureMediaTrack?
     private let audio: CaptureMediaTrack?
     private let lock = NSLock()
     private var streamFailure: Error?
     var failure: Error? { lock.withLock { streamFailure } }
 
-    init(screen: CaptureMediaTrack, microphone: CaptureMediaTrack, audio: CaptureMediaTrack?) {
+    init(screen: CaptureMediaTrack, microphone: CaptureMediaTrack?, audio: CaptureMediaTrack?) {
         self.screen = screen
         self.microphone = microphone
         self.audio = audio
@@ -130,7 +136,7 @@ private final class ScreenStreamReceiver: NSObject, SCStreamOutput, SCStreamDele
                   SCFrameStatus(rawValue: status) == .complete else { return }
             screen.consume(sampleBuffer)
         case .microphone:
-            microphone.consume(sampleBuffer)
+            microphone?.consume(sampleBuffer)
         case .audio:
             audio?.consume(sampleBuffer)
         @unknown default:

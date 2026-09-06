@@ -154,6 +154,52 @@ final class RecordingSessionControllerTests: XCTestCase {
             guard case .failed = fixture.coordinator.phase else { return XCTFail("Expected failed phase") }
         }
     }
+
+    func testScreenOnlyStartAndStopSkipCameraAndMicrophone() async throws {
+        let fixture = try Fixture(settings: .screenOnly)
+        defer { fixture.removeWorkspace() }
+
+        try await fixture.controller.start(configuration: fixture.configuration)
+
+        XCTAssertEqual(fixture.order.events, ["screen.start"])
+        XCTAssertFalse(try XCTUnwrap(fixture.screen.configuration).captureMicrophone)
+
+        try await fixture.controller.stop()
+
+        XCTAssertEqual(fixture.order.events, ["screen.start", "screen.stop"])
+    }
+
+    func testEnabledCameraWithoutSelectionFailsBeforeCaptureStarts() async throws {
+        var settings = RecordingSettings.screenOnly
+        settings.includeCamera = true
+        let fixture = try Fixture(settings: settings)
+        defer { fixture.removeWorkspace() }
+
+        do {
+            try await fixture.controller.start(configuration: fixture.configuration)
+            XCTFail("Expected missing camera selection")
+        } catch RecordingSessionError.missingCamera {
+            XCTAssertTrue(fixture.order.events.isEmpty)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testEnabledMicrophoneWithoutSelectionFailsBeforeCaptureStarts() async throws {
+        var settings = RecordingSettings.screenOnly
+        settings.includeMicrophone = true
+        let fixture = try Fixture(settings: settings)
+        defer { fixture.removeWorkspace() }
+
+        do {
+            try await fixture.controller.start(configuration: fixture.configuration)
+            XCTFail("Expected missing microphone selection")
+        } catch RecordingSessionError.missingMicrophone {
+            XCTAssertTrue(fixture.order.events.isEmpty)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
 }
 
 private enum TestError: Error { case failed }
@@ -238,9 +284,9 @@ private final class FakeCameraCapture: CameraCapturing {
 private final class FakeWorkspaceFactory: RecordingWorkspaceCreating {
     let root: URL
     let workspace: RecordingWorkspace
-    init() throws {
+    init(settings: RecordingSettings = .fixture) throws {
         root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        workspace = try RecordingWorkspace.create(baseDirectory: root, settings: .fixture)
+        workspace = try RecordingWorkspace.create(baseDirectory: root, settings: settings)
     }
     func create(settings: RecordingSettings) throws -> RecordingWorkspace { workspace }
 }
@@ -253,8 +299,13 @@ private struct Fixture {
     let screen: FakeScreenCapture
     let camera: FakeCameraCapture
     let controller: RecordingSessionController
-    init(sleeper: any CountdownSleeping = ImmediateCountdownSleeper()) throws {
-        factory = try FakeWorkspaceFactory()
+    private let settings: RecordingSettings
+    init(
+        settings: RecordingSettings = .fixture,
+        sleeper: any CountdownSleeping = ImmediateCountdownSleeper()
+    ) throws {
+        self.settings = settings
+        factory = try FakeWorkspaceFactory(settings: settings)
         screen = FakeScreenCapture(order: order)
         camera = FakeCameraCapture(order: order)
         controller = RecordingSessionController(
@@ -266,12 +317,22 @@ private struct Fixture {
     func persistedManifest() throws -> RecordingManifest {
         try JSONDecoder().decode(RecordingManifest.self, from: Data(contentsOf: factory.workspace.manifestURL))
     }
+    var configuration: RecordingSessionConfiguration {
+        RecordingSessionConfiguration(source: SessionTestScreenSelection(), settings: settings)
+    }
 }
 
 private extension RecordingSettings {
     static var fixture: RecordingSettings {
         RecordingSettings(includeSystemAudio: true, overlayShape: .roundedSquare, overlaySize: .large,
                           cameraDeviceID: "test-camera", microphoneDeviceID: "test-microphone")
+    }
+
+    static var screenOnly: RecordingSettings {
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        settings.includeMicrophone = false
+        return settings
     }
 }
 

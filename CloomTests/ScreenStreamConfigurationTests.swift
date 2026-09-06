@@ -7,6 +7,7 @@ final class ScreenStreamConfigurationTests: XCTestCase {
     func testMicrophoneOnlyConfiguration() {
         let configuration = ScreenStreamConfigurationFactory.make(
             includeSystemAudio: false,
+            includeMicrophone: true,
             microphoneDeviceID: "mic-1"
         )
 
@@ -25,9 +26,32 @@ final class ScreenStreamConfigurationTests: XCTestCase {
     func testCombinedConfigurationAddsSystemAudio() {
         let configuration = ScreenStreamConfigurationFactory.make(
             includeSystemAudio: true,
+            includeMicrophone: true,
             microphoneDeviceID: "mic-1"
         )
 
+        XCTAssertTrue(configuration.capturesAudio)
+    }
+
+    func testScreenOnlyConfigurationDoesNotCaptureMicrophone() {
+        let configuration = ScreenStreamConfigurationFactory.make(
+            includeSystemAudio: false,
+            includeMicrophone: false,
+            microphoneDeviceID: "stored-but-disabled"
+        )
+
+        XCTAssertFalse(configuration.captureMicrophone)
+        XCTAssertNil(configuration.microphoneCaptureDeviceID)
+    }
+
+    func testSystemAudioDoesNotRequireMicrophoneCapture() {
+        let configuration = ScreenStreamConfigurationFactory.make(
+            includeSystemAudio: true,
+            includeMicrophone: false,
+            microphoneDeviceID: nil
+        )
+
+        XCTAssertFalse(configuration.captureMicrophone)
         XCTAssertTrue(configuration.capturesAudio)
     }
 }

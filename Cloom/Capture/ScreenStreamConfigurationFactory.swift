@@ -5,7 +5,8 @@ import ScreenCaptureKit
 enum ScreenStreamConfigurationFactory {
     static func make(
         includeSystemAudio: Bool,
-        microphoneDeviceID: String
+        includeMicrophone: Bool,
+        microphoneDeviceID: String?
     ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
         configuration.width = 1920
@@ -14,8 +15,8 @@ enum ScreenStreamConfigurationFactory {
         configuration.queueDepth = 5
         configuration.pixelFormat = kCVPixelFormatType_32BGRA
         configuration.showsCursor = true
-        configuration.captureMicrophone = true
-        configuration.microphoneCaptureDeviceID = microphoneDeviceID
+        configuration.captureMicrophone = includeMicrophone
+        configuration.microphoneCaptureDeviceID = includeMicrophone ? microphoneDeviceID : nil
         configuration.capturesAudio = includeSystemAudio
         configuration.excludesCurrentProcessAudio = true
         return configuration
