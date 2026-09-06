@@ -1,5 +1,17 @@
 import SwiftUI
 
+struct RecordingControlVisibility: Equatable {
+    let showsCameraToggle: Bool
+    let showsOverlayControls: Bool
+    let showsMicrophoneMute: Bool
+
+    init(settings: RecordingSettings) {
+        showsCameraToggle = settings.includeCamera
+        showsOverlayControls = settings.includeCamera
+        showsMicrophoneMute = settings.includeMicrophone
+    }
+}
+
 struct RecordingControlsView: View {
     @ObservedObject var model: AppModel
 
@@ -11,28 +23,7 @@ struct RecordingControlsView: View {
             Text(timeText).font(.system(.largeTitle, design: .monospaced).bold())
             RecordingStatusView(coordinator: model.recordingCoordinator)
 
-            HStack(spacing: 16) {
-                Toggle("Camera", isOn: Binding(
-                    get: { model.overlayState.isVisible }, set: { model.setCameraVisible($0) }
-                )).toggleStyle(.switch)
-
-                Toggle("Mute Mic", isOn: Binding(
-                    get: { model.isMicrophoneMuted }, set: { model.setMicrophoneMuted($0) }
-                )).toggleStyle(.switch)
-
-                Picker("Size", selection: Binding(
-                    get: { model.overlayState.size }, set: { model.setOverlaySize($0) }
-                )) {
-                    ForEach(OverlaySize.allCases, id: \.self) { Text($0.label).tag($0) }
-                }.pickerStyle(.segmented).frame(width: 200)
-
-                Picker("Shape", selection: Binding(
-                    get: { model.overlayState.shape }, set: { model.setOverlayShape($0) }
-                )) {
-                    Text("Circle").tag(OverlayShape.circle)
-                    Text("Rounded").tag(OverlayShape.roundedSquare)
-                }.frame(width: 130)
-            }
+            controls
 
             Button(role: .destructive) {
                 Task { await model.stopRecording() }
@@ -47,6 +38,72 @@ struct RecordingControlsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(40)
+    }
+
+    @ViewBuilder
+    private var controls: some View {
+        let visibility = RecordingControlVisibility(settings: model.activeRecordingSettings ?? model.settings)
+        VStack(alignment: .leading, spacing: 12) {
+            if visibility.showsCameraToggle {
+                controlRow("Camera") {
+                    Toggle("Show camera", isOn: Binding(
+                        get: { model.overlayState.isVisible }, set: { model.setCameraVisible($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                }
+            }
+
+            if visibility.showsOverlayControls {
+                controlRow("Camera size") {
+                    Picker("Camera size", selection: Binding(
+                        get: { model.overlayState.size }, set: { model.setOverlaySize($0) }
+                    )) {
+                        ForEach(OverlaySize.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 210)
+                }
+
+                controlRow("Camera shape") {
+                    Picker("Camera shape", selection: Binding(
+                        get: { model.overlayState.shape }, set: { model.setOverlayShape($0) }
+                    )) {
+                        Text("Circle").tag(OverlayShape.circle)
+                        Text("Rounded").tag(OverlayShape.roundedSquare)
+                    }
+                    .labelsHidden()
+                    .frame(width: 210)
+                }
+            }
+
+            if visibility.showsMicrophoneMute {
+                controlRow("Microphone") {
+                    Toggle("Mute microphone", isOn: Binding(
+                        get: { model.isMicrophoneMuted }, set: { model.setMicrophoneMuted($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: 380)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func controlRow<Control: View>(
+        _ title: String,
+        @ViewBuilder control: () -> Control
+    ) -> some View {
+        HStack(spacing: 20) {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 20)
+            control()
+        }
+        .frame(minHeight: 30)
     }
 
     private var timeText: String {

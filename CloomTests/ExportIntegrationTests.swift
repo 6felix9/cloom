@@ -5,6 +5,42 @@ import XCTest
 
 @MainActor
 final class ExportIntegrationTests: XCTestCase {
+    func testStartSnapshotsSettingsForRecordingControls() async throws {
+        var screenOnly = RecordingSettings.default
+        screenOnly.includeCamera = false
+        screenOnly.includeMicrophone = false
+        let coordinator = RecordingCoordinator()
+        let order = CaptureOrder()
+        let factory = try FakeWorkspaceFactory(settings: screenOnly)
+        defer { try? FileManager.default.removeItem(at: factory.root) }
+        let controller = RecordingSessionController(
+            coordinator: coordinator,
+            screenCapture: FakeScreenCapture(order: order),
+            cameraCapture: FakeCameraCapture(order: order),
+            workspaceFactory: factory,
+            clock: FixedClock(),
+            countdownSleeper: ImmediateSleeper()
+        )
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [.screen: .authorized]),
+            settingsStore: InMemorySettingsStore(value: screenOnly),
+            recordingCoordinator: coordinator,
+            sourcePicker: FakeSourcePicker(),
+            sessionController: controller,
+            exporter: FakeExporter(result: .success(URL(fileURLWithPath: "/tmp/cloom-snapshot.mp4")))
+        )
+
+        await model.selectCaptureSource()
+        await model.startRecording()
+        model.settings.includeCamera = true
+        model.settings.includeMicrophone = true
+
+        XCTAssertEqual(model.activeRecordingSettings?.includeCamera, false)
+        XCTAssertEqual(model.activeRecordingSettings?.includeMicrophone, false)
+
+        await model.stopRecording()
+    }
+
     func testStopRecordingTriggersExporterAndFinishes() async throws {
         let expectedURL = URL(fileURLWithPath: "/tmp/cloom-finished.mp4")
         let fakeExporter = FakeExporter(result: .success(expectedURL))
@@ -173,11 +209,16 @@ private final class FakeCameraCapture: CameraCapturing {
 private final class FakeWorkspaceFactory: RecordingWorkspaceCreating {
     let root: URL
     let workspace: RecordingWorkspace
-    init() throws {
+    init(settings: RecordingSettings = .testSettings) throws {
         root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        workspace = try RecordingWorkspace.create(baseDirectory: root, settings: .testSettings)
+        workspace = try RecordingWorkspace.create(baseDirectory: root, settings: settings)
     }
     func create(settings: RecordingSettings) throws -> RecordingWorkspace { workspace }
+}
+
+@MainActor
+private final class FakeSourcePicker: ScreenSourcePicking {
+    func present() async throws -> (any ScreenCaptureSelection)? { FakeSource() }
 }
 
 private struct FixedClock: RecordingClock {

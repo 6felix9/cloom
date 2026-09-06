@@ -20,6 +20,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var recordingError: String?
     @Published private(set) var warnings: [String] = []
     @Published private(set) var overlayState: OverlayState
+    @Published private(set) var activeRecordingSettings: RecordingSettings?
 
     let recordingCoordinator: RecordingCoordinator
 
@@ -137,16 +138,26 @@ final class AppModel: ObservableObject {
         warnings = []
         muteIntervals = []
         activeMuteStartSeconds = nil
-        overlayState.shape = settings.overlayShape
-        overlayState.size = settings.overlaySize
+        let recordingSettings = settings
+        activeRecordingSettings = recordingSettings
+        overlayState.shape = recordingSettings.overlayShape
+        overlayState.size = recordingSettings.overlaySize
+        if !recordingSettings.includeMicrophone {
+            isMicrophoneMuted = false
+        }
         do {
-            try await sessionController.start(configuration: RecordingSessionConfiguration(source: source, settings: settings))
-            if isMicrophoneMuted {
+            try await sessionController.start(configuration: RecordingSessionConfiguration(
+                source: source,
+                settings: recordingSettings
+            ))
+            if recordingSettings.includeMicrophone, isMicrophoneMuted {
                 activeMuteStartSeconds = 0.0
             }
-            bubblePanel.show(session: sessionController.previewSession, state: overlayState,
-                             captureFrame: source.presentationFrame) { [weak self] state in
-                self?.applyOverlay(state)
+            if recordingSettings.includeCamera {
+                bubblePanel.show(session: sessionController.previewSession, state: overlayState,
+                                 captureFrame: source.presentationFrame) { [weak self] state in
+                    self?.applyOverlay(state)
+                }
             }
             beginElapsedTimer()
         } catch {
@@ -172,6 +183,10 @@ final class AppModel: ObservableObject {
     }
 
     func setMicrophoneMuted(_ muted: Bool) {
+        guard activeRecordingSettings?.includeMicrophone == true else {
+            isMicrophoneMuted = false
+            return
+        }
         isMicrophoneMuted = muted
         guard let epoch = sessionController.epoch, recordingCoordinator.phase == .recording else { return }
         let nowSeconds = max(0, CMClockGetTime(CMClockGetHostTimeClock()).seconds - epoch)
@@ -230,6 +245,8 @@ final class AppModel: ObservableObject {
     func recordAnother() {
         recordingError = nil
         elapsedSeconds = 0
+        activeRecordingSettings = nil
+        isMicrophoneMuted = false
         recordingCoordinator.reset()
     }
 
