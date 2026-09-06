@@ -22,6 +22,7 @@ struct SetupView: View {
         .frame(minWidth: 620, minHeight: 660)
         .task {
             await model.refreshPermissions()
+            await model.refreshDevices()
         }
     }
 
@@ -71,8 +72,18 @@ struct SetupView: View {
             sectionHeader("Recording", subtitle: "Choose what Cloom should capture.")
 
             unavailableSelector(title: "Screen or window", icon: "rectangle.dashed")
-            unavailableSelector(title: "Camera", icon: "video")
-            unavailableSelector(title: "Microphone", icon: "mic")
+            devicePicker(
+                title: "Camera",
+                icon: "video",
+                devices: model.cameraDevices,
+                selection: cameraBinding
+            )
+            devicePicker(
+                title: "Microphone",
+                icon: "mic",
+                devices: model.microphoneDevices,
+                selection: microphoneBinding
+            )
 
             Toggle("Include Mac system audio", isOn: systemAudioBinding)
                 .toggleStyle(.switch)
@@ -153,10 +164,51 @@ struct SetupView: View {
         .background(.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
     }
 
+    private func devicePicker(
+        title: String,
+        icon: String,
+        devices: [CaptureDeviceOption],
+        selection: Binding<String?>
+    ) -> some View {
+        Picker(selection: selection) {
+            if devices.isEmpty {
+                Text("No \(title.lowercased()) available").tag(Optional<String>.none)
+            } else {
+                ForEach(devices) { device in
+                    Text(device.name).tag(Optional(device.id))
+                }
+            }
+        } label: {
+            Label(title, systemImage: icon)
+        }
+    }
+
     private var systemAudioBinding: Binding<Bool> {
         Binding(
             get: { model.settings.includeSystemAudio },
             set: { model.settings.includeSystemAudio = $0 }
+        )
+    }
+
+    private var cameraBinding: Binding<String?> {
+        Binding(
+            get: { model.settings.cameraDeviceID },
+            set: { id in
+                if let id {
+                    model.selectCamera(id: id)
+                }
+            }
+        )
+    }
+
+    private var microphoneBinding: Binding<String?> {
+        Binding(
+            get: { model.settings.microphoneDeviceID },
+            set: { id in
+                if let id {
+                    model.selectMicrophone(id: id)
+                }
+            }
         )
     }
 

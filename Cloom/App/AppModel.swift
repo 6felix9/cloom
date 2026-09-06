@@ -9,20 +9,25 @@ final class AppModel: ObservableObject {
             settingsStore.save(settings)
         }
     }
+    @Published private(set) var cameraDevices: [CaptureDeviceOption] = []
+    @Published private(set) var microphoneDevices: [CaptureDeviceOption] = []
 
     let recordingCoordinator: RecordingCoordinator
 
     private let permissionChecker: PermissionChecking
     private let settingsStore: SettingsStoring
+    private let deviceDiscovery: CaptureDeviceDiscovering
 
     init(
         permissionChecker: PermissionChecking,
         settingsStore: SettingsStoring = UserDefaultsSettingsStore(),
-        recordingCoordinator: RecordingCoordinator = RecordingCoordinator()
+        recordingCoordinator: RecordingCoordinator = RecordingCoordinator(),
+        deviceDiscovery: CaptureDeviceDiscovering = AVCaptureDeviceDiscovery()
     ) {
         self.permissionChecker = permissionChecker
         self.settingsStore = settingsStore
         self.recordingCoordinator = recordingCoordinator
+        self.deviceDiscovery = deviceDiscovery
         self.settings = settingsStore.load()
         self.permissions = Dictionary(
             uniqueKeysWithValues: CapturePermission.allCases.map { ($0, .notDetermined) }
@@ -52,5 +57,26 @@ final class AppModel: ObservableObject {
 
     func openSettings(for permission: CapturePermission) {
         permissionChecker.openSettings(for: permission)
+    }
+
+    func refreshDevices() async {
+        cameraDevices = deviceDiscovery.devices(for: .camera)
+        microphoneDevices = deviceDiscovery.devices(for: .microphone)
+
+        if !cameraDevices.contains(where: { $0.id == settings.cameraDeviceID }) {
+            settings.cameraDeviceID = cameraDevices.first?.id
+        }
+
+        if !microphoneDevices.contains(where: { $0.id == settings.microphoneDeviceID }) {
+            settings.microphoneDeviceID = microphoneDevices.first?.id
+        }
+    }
+
+    func selectCamera(id: String) {
+        settings.cameraDeviceID = id
+    }
+
+    func selectMicrophone(id: String) {
+        settings.microphoneDeviceID = id
     }
 }
