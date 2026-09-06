@@ -104,6 +104,34 @@ final class CaptureDeviceDiscoveryTests: XCTestCase {
         XCTAssertEqual(model.settings.cameraDeviceID, "disconnected-camera")
         XCTAssertEqual(model.settings.microphoneDeviceID, "disconnected-mic")
     }
+
+    func testReenablingInputsReconcilesUnavailableRetainedSelections() async {
+        var initial = RecordingSettings(
+            includeSystemAudio: false,
+            overlayShape: .circle,
+            overlaySize: .medium,
+            cameraDeviceID: "disconnected-camera",
+            microphoneDeviceID: "disconnected-mic"
+        )
+        initial.includeCamera = false
+        initial.includeMicrophone = false
+        let discovery = FakeCaptureDeviceDiscovery(
+            cameras: [.init(id: "built-in-camera", name: "Built-in", kind: .camera)],
+            microphones: [.init(id: "built-in-mic", name: "Built-in", kind: .microphone)]
+        )
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [:]),
+            settingsStore: InMemorySettingsStore(value: initial),
+            deviceDiscovery: discovery
+        )
+        await model.refreshDevices()
+
+        model.setCameraCaptureEnabled(true)
+        model.setMicrophoneCaptureEnabled(true)
+
+        XCTAssertEqual(model.settings.cameraDeviceID, "built-in-camera")
+        XCTAssertEqual(model.settings.microphoneDeviceID, "built-in-mic")
+    }
 }
 
 @MainActor

@@ -116,8 +116,22 @@ final class AppModel: ObservableObject {
         settings.cameraDeviceID = id
     }
 
+    func setCameraCaptureEnabled(_ enabled: Bool) {
+        settings.includeCamera = enabled
+        guard enabled,
+              !cameraDevices.contains(where: { $0.id == settings.cameraDeviceID }) else { return }
+        settings.cameraDeviceID = fallbackDeviceID(for: .camera, in: cameraDevices)
+    }
+
     func selectMicrophone(id: String) {
         settings.microphoneDeviceID = id
+    }
+
+    func setMicrophoneCaptureEnabled(_ enabled: Bool) {
+        settings.includeMicrophone = enabled
+        guard enabled,
+              !microphoneDevices.contains(where: { $0.id == settings.microphoneDeviceID }) else { return }
+        settings.microphoneDeviceID = fallbackDeviceID(for: .microphone, in: microphoneDevices)
     }
 
     func selectCaptureSource() async {

@@ -256,14 +256,14 @@ struct SetupView: View {
     private var includeCameraBinding: Binding<Bool> {
         Binding(
             get: { model.settings.includeCamera },
-            set: { model.settings.includeCamera = $0 }
+            set: { model.setCameraCaptureEnabled($0) }
         )
     }
 
     private var includeMicrophoneBinding: Binding<Bool> {
         Binding(
             get: { model.settings.includeMicrophone },
-            set: { model.settings.includeMicrophone = $0 }
+            set: { model.setMicrophoneCaptureEnabled($0) }
         )
     }
 
