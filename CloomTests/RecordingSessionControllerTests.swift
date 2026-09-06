@@ -106,6 +106,22 @@ final class RecordingSessionControllerTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: fixture.factory.workspace.screenURL), artifact)
     }
 
+    func testStopImmediatelyEntersStoppingBeforeCaptureTeardownCompletes() async throws {
+        let gate = ControlledStopGate()
+        let fixture = try Fixture()
+        defer { fixture.removeWorkspace() }
+        fixture.screen.stopGate = gate
+        try await fixture.controller.start(configuration: .fixture)
+
+        let stop = Task { try await fixture.controller.stop() }
+        await gate.waitUntilBlocked()
+
+        XCTAssertEqual(fixture.coordinator.phase, .stopping)
+        await gate.resume()
+        try await stop.value
+        XCTAssertEqual(fixture.coordinator.phase, .exporting(progress: 0))
+    }
+
     func testScreenStopFailureStillStopsCameraAndMarksWorkspaceFailed() async throws {
         let fixture = try Fixture()
         defer { fixture.removeWorkspace() }
@@ -238,6 +254,28 @@ private actor ControlledCountdownSleeper: CountdownSleeping {
     func resume() { completion?.resume(); completion = nil }
 }
 
+private actor ControlledStopGate {
+    private var blocked = false
+    private var entered: CheckedContinuation<Void, Never>?
+    private var completion: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        await withCheckedContinuation { continuation in
+            completion = continuation
+            blocked = true
+            entered?.resume()
+            entered = nil
+        }
+    }
+
+    func waitUntilBlocked() async {
+        if blocked { return }
+        await withCheckedContinuation { entered = $0 }
+    }
+
+    func resume() { completion?.resume(); completion = nil }
+}
+
 @MainActor
 private final class CaptureOrder { var events: [String] = [] }
 
@@ -248,6 +286,7 @@ private final class FakeScreenCapture: ScreenCapturing {
     var configuration: SCStreamConfiguration?
     var startError: Error?
     var stopError: Error?
+    var stopGate: ControlledStopGate?
 
     init(order: CaptureOrder) { self.order = order }
     func start(selection: any ScreenCaptureSelection, configuration: SCStreamConfiguration,
@@ -259,6 +298,7 @@ private final class FakeScreenCapture: ScreenCapturing {
     }
     func stop() async throws {
         order.events.append("screen.stop")
+        if let stopGate { await stopGate.wait() }
         if let stopError { throw stopError }
     }
 }

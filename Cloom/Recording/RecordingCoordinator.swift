@@ -26,9 +26,16 @@ final class RecordingCoordinator: ObservableObject {
         phase = .recording
     }
 
+    func beginStopping() throws {
+        guard phase == .recording else {
+            throw invalidTransition("beginStopping")
+        }
+        phase = .stopping
+    }
+
     func beginExporting() throws {
         switch phase {
-        case .recording, .failed:
+        case .stopping, .failed:
             phase = .exporting(progress: 0)
         default:
             throw invalidTransition("beginExporting")

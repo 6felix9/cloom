@@ -11,6 +11,7 @@ enum RecordingPhase: Equatable, Sendable {
     case preparing
     case countdown
     case recording
+    case stopping
     case exporting(progress: Double)
     case finished(outputURL: URL)
     case failed(RecordingFailure)

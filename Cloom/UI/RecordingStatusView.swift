@@ -26,6 +26,8 @@ struct RecordingStatusView: View {
             "Starting in 3…"
         case .recording:
             "Recording"
+        case .stopping:
+            "Stopping recording"
         case let .exporting(progress):
             "Preparing video \(Int(progress * 100))%"
         case let .finished(outputURL):

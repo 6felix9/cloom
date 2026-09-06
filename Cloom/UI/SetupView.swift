@@ -6,7 +6,7 @@ struct SetupView: View {
     var body: some View {
         Group {
             switch model.recordingCoordinator.phase {
-            case .preparing, .countdown, .recording:
+            case .preparing, .countdown, .recording, .stopping:
                 RecordingControlsView(model: model)
             case .exporting, .finished, .failed:
                 completionView

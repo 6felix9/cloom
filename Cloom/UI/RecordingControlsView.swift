@@ -37,7 +37,10 @@ struct RecordingControlsView: View {
             Button(role: .destructive) {
                 Task { await model.stopRecording() }
             } label: {
-                Label("Stop Recording", systemImage: "stop.fill").frame(minWidth: 150)
+                Label(
+                    model.recordingCoordinator.phase == .stopping ? "Stopping…" : "Stop Recording",
+                    systemImage: "stop.fill"
+                ).frame(minWidth: 150)
             }
             .buttonStyle(.borderedProminent)
             .disabled(model.recordingCoordinator.phase != .recording)

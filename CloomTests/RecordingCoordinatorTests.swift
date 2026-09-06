@@ -10,10 +10,27 @@ final class RecordingCoordinatorTests: XCTestCase {
         try coordinator.beginPreparing()
         try coordinator.beginCountdown()
         try coordinator.beginRecording()
+        try coordinator.beginStopping()
         try coordinator.beginExporting()
         try coordinator.finish(outputURL: output)
 
         XCTAssertEqual(coordinator.phase, .finished(outputURL: output))
+    }
+
+    func testStoppingCanOnlyBeginFromRecording() throws {
+        let coordinator = RecordingCoordinator()
+
+        XCTAssertThrowsError(try coordinator.beginStopping())
+        XCTAssertEqual(coordinator.phase, .idle)
+
+        try coordinator.beginPreparing()
+        try coordinator.beginCountdown()
+        try coordinator.beginRecording()
+        try coordinator.beginStopping()
+
+        XCTAssertEqual(coordinator.phase, .stopping)
+        XCTAssertThrowsError(try coordinator.beginStopping())
+        XCTAssertEqual(coordinator.phase, .stopping)
     }
 
     func testInvalidTransitionPreservesCurrentPhase() {

@@ -168,6 +168,7 @@ final class RecordingSessionController {
         guard coordinator.phase == .recording, let workspace else {
             throw RecordingTransitionError.invalid(from: coordinator.phase, action: "stop")
         }
+        try coordinator.beginStopping()
         operationInProgress = true
         defer { operationInProgress = false }
         var failure: Error?
