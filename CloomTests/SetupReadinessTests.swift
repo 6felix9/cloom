@@ -34,4 +34,41 @@ final class SetupReadinessTests: XCTestCase {
 
         XCTAssertTrue(model.isReadyToConfigure)
     }
+
+    func testScreenOnlyConfigurationIgnoresDisabledInputPermissions() async {
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        settings.includeMicrophone = false
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [
+                .screen: .authorized,
+                .camera: .denied,
+                .microphone: .denied,
+            ]),
+            settingsStore: InMemorySettingsStore(value: settings)
+        )
+
+        await model.refreshPermissions()
+
+        XCTAssertTrue(model.hasScreenCapturePermission)
+        XCTAssertTrue(model.isReadyToConfigure)
+    }
+
+    func testEnabledCameraStillRequiresPermission() async {
+        var settings = RecordingSettings.default
+        settings.includeMicrophone = false
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [
+                .screen: .authorized,
+                .camera: .denied,
+                .microphone: .denied,
+            ]),
+            settingsStore: InMemorySettingsStore(value: settings)
+        )
+
+        await model.refreshPermissions()
+
+        XCTAssertTrue(model.hasScreenCapturePermission)
+        XCTAssertFalse(model.isReadyToConfigure)
+    }
 }

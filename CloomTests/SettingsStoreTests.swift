@@ -8,10 +8,41 @@ final class SettingsStoreTests: XCTestCase {
         let settings = RecordingSettings.default
 
         XCTAssertFalse(settings.includeSystemAudio)
+        XCTAssertTrue(settings.includeCamera)
+        XCTAssertTrue(settings.includeMicrophone)
         XCTAssertEqual(settings.overlayShape, .circle)
         XCTAssertEqual(settings.overlaySize, .medium)
         XCTAssertNil(settings.cameraDeviceID)
         XCTAssertNil(settings.microphoneDeviceID)
+    }
+
+    func testLegacySettingsDecodeWithInputsEnabled() throws {
+        let data = Data(
+            #"{"includeSystemAudio":false,"overlayShape":"circle","overlaySize":"medium","cameraDeviceID":"camera-1","microphoneDeviceID":"mic-1"}"#.utf8
+        )
+
+        let settings = try JSONDecoder().decode(RecordingSettings.self, from: data)
+
+        XCTAssertTrue(settings.includeCamera)
+        XCTAssertTrue(settings.includeMicrophone)
+        XCTAssertEqual(settings.cameraDeviceID, "camera-1")
+        XCTAssertEqual(settings.microphoneDeviceID, "mic-1")
+    }
+
+    func testDisablingInputsPreservesSelectedDeviceIDs() {
+        var settings = RecordingSettings(
+            includeSystemAudio: false,
+            overlayShape: .circle,
+            overlaySize: .medium,
+            cameraDeviceID: "camera-1",
+            microphoneDeviceID: "mic-1"
+        )
+
+        settings.includeCamera = false
+        settings.includeMicrophone = false
+
+        XCTAssertEqual(settings.cameraDeviceID, "camera-1")
+        XCTAssertEqual(settings.microphoneDeviceID, "mic-1")
     }
 
     func testUserDefaultsStoreRoundTripsSettings() throws {

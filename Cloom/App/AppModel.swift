@@ -65,17 +65,21 @@ final class AppModel: ObservableObject {
         settingsStore: UserDefaultsSettingsStore()
     )
 
+    var hasScreenCapturePermission: Bool {
+        permissions[.screen] == .authorized
+    }
+
     var isReadyToConfigure: Bool {
-        CapturePermission.allCases.allSatisfy {
-            permissions[$0] == .authorized
-        }
+        hasScreenCapturePermission &&
+            (!settings.includeCamera || permissions[.camera] == .authorized) &&
+            (!settings.includeMicrophone || permissions[.microphone] == .authorized)
     }
 
     var isReadyToRecord: Bool {
         isReadyToConfigure &&
             selectedCaptureSource != nil &&
-            settings.cameraDeviceID != nil &&
-            settings.microphoneDeviceID != nil
+            (!settings.includeCamera || settings.cameraDeviceID?.isEmpty == false) &&
+            (!settings.includeMicrophone || settings.microphoneDeviceID?.isEmpty == false)
     }
 
     func refreshPermissions() async {

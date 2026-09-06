@@ -26,9 +26,11 @@ struct SetupView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
                 permissionSection
-                if model.isReadyToConfigure {
+                if model.hasScreenCapturePermission {
                     recordingSection
-                    overlaySection
+                    if model.settings.includeCamera {
+                        overlaySection
+                    }
                     footer
                 } else { permissionHint }
             }
@@ -110,18 +112,26 @@ struct SetupView: View {
             sectionHeader("Recording", subtitle: "Choose what Cloom should capture.")
 
             sourceSelector
-            devicePicker(
-                title: "Camera",
-                icon: "video",
-                devices: model.cameraDevices,
-                selection: cameraBinding
-            )
-            devicePicker(
-                title: "Microphone",
-                icon: "mic",
-                devices: model.microphoneDevices,
-                selection: microphoneBinding
-            )
+            Toggle("Include camera", isOn: includeCameraBinding)
+                .toggleStyle(.switch)
+            if model.settings.includeCamera {
+                devicePicker(
+                    title: "Camera",
+                    icon: "video",
+                    devices: model.cameraDevices,
+                    selection: cameraBinding
+                )
+            }
+            Toggle("Include microphone", isOn: includeMicrophoneBinding)
+                .toggleStyle(.switch)
+            if model.settings.includeMicrophone {
+                devicePicker(
+                    title: "Microphone",
+                    icon: "mic",
+                    devices: model.microphoneDevices,
+                    selection: microphoneBinding
+                )
+            }
 
             Toggle("Include Mac system audio", isOn: systemAudioBinding)
                 .toggleStyle(.switch)
@@ -164,14 +174,14 @@ struct SetupView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
                 .disabled(!model.isReadyToRecord)
-                .help("Select a screen or window and recording devices before recording")
+                .help(recordButtonHelp)
             }
         }
     }
 
     private var permissionHint: some View {
         Label(
-            "Allow all three permissions to configure a recording.",
+            "Allow Screen Recording access to configure a recording.",
             systemImage: "lock.shield"
         )
         .font(.callout)
@@ -243,25 +253,31 @@ struct SetupView: View {
         )
     }
 
+    private var includeCameraBinding: Binding<Bool> {
+        Binding(
+            get: { model.settings.includeCamera },
+            set: { model.settings.includeCamera = $0 }
+        )
+    }
+
+    private var includeMicrophoneBinding: Binding<Bool> {
+        Binding(
+            get: { model.settings.includeMicrophone },
+            set: { model.settings.includeMicrophone = $0 }
+        )
+    }
+
     private var cameraBinding: Binding<String?> {
         Binding(
             get: { model.settings.cameraDeviceID },
-            set: { id in
-                if let id {
-                    model.selectCamera(id: id)
-                }
-            }
+            set: { model.settings.cameraDeviceID = $0 }
         )
     }
 
     private var microphoneBinding: Binding<String?> {
         Binding(
             get: { model.settings.microphoneDeviceID },
-            set: { id in
-                if let id {
-                    model.selectMicrophone(id: id)
-                }
-            }
+            set: { model.settings.microphoneDeviceID = $0 }
         )
     }
 
@@ -277,5 +293,21 @@ struct SetupView: View {
             get: { model.settings.overlaySize },
             set: { model.settings.overlaySize = $0 }
         )
+    }
+
+    private var recordButtonHelp: String {
+        if !model.isReadyToConfigure {
+            return "Allow access for each enabled recording input"
+        }
+        if model.selectedCaptureSource == nil {
+            return "Select a screen or window to record"
+        }
+        if model.settings.includeCamera, model.settings.cameraDeviceID?.isEmpty != false {
+            return "Select a camera or turn camera capture off"
+        }
+        if model.settings.includeMicrophone, model.settings.microphoneDeviceID?.isEmpty != false {
+            return "Select a microphone or turn microphone capture off"
+        }
+        return "Ready to record"
     }
 }

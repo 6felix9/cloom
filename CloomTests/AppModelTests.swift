@@ -90,6 +90,48 @@ final class AppModelTests: XCTestCase {
 
         XCTAssertTrue(model.isReadyToRecord)
     }
+
+    func testScreenOnlyReadinessRequiresOnlyScreenPermissionAndSource() async {
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        settings.includeMicrophone = false
+        let selection = FakeScreenCaptureSelection(title: "Display 1")
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [
+                .screen: .authorized,
+                .camera: .denied,
+                .microphone: .denied,
+            ]),
+            settingsStore: InMemorySettingsStore(value: settings),
+            sourcePicker: FakeScreenSourcePicker(results: [.selection(selection)])
+        )
+
+        await model.refreshPermissions()
+        await model.selectCaptureSource()
+
+        XCTAssertTrue(model.isReadyToRecord)
+    }
+
+    func testEnabledMicrophoneRequiresASelectedDevice() async {
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        settings.microphoneDeviceID = nil
+        let selection = FakeScreenCaptureSelection(title: "Display 1")
+        let model = AppModel(
+            permissionChecker: FakePermissionChecker(statuses: [
+                .screen: .authorized,
+                .camera: .denied,
+                .microphone: .authorized,
+            ]),
+            settingsStore: InMemorySettingsStore(value: settings),
+            sourcePicker: FakeScreenSourcePicker(results: [.selection(selection)])
+        )
+
+        await model.refreshPermissions()
+        await model.selectCaptureSource()
+
+        XCTAssertFalse(model.isReadyToRecord)
+    }
 }
 
 @MainActor
