@@ -34,6 +34,12 @@ final class AppModel: ObservableObject {
         settingsStore: UserDefaultsSettingsStore()
     )
 
+    var isReadyToConfigure: Bool {
+        CapturePermission.allCases.allSatisfy {
+            permissions[$0] == .authorized
+        }
+    }
+
     func refreshPermissions() async {
         for permission in CapturePermission.allCases {
             permissions[permission] = permissionChecker.status(for: permission)
