@@ -1,6 +1,6 @@
 import Foundation
 
-final class RecordingWorkspace {
+final class RecordingWorkspace: @unchecked Sendable {
     let directory: URL
     let overlayURL: URL
     let screenURL: URL
@@ -8,7 +8,11 @@ final class RecordingWorkspace {
     let microphoneURL: URL
     let systemAudioURL: URL
     let manifestURL: URL
-    private(set) var manifest: RecordingManifest
+    private let lock = NSLock()
+    private var _manifest: RecordingManifest
+    var manifest: RecordingManifest {
+        lock.withLock { _manifest }
+    }
 
     private init(directory: URL, manifest: RecordingManifest) {
         self.directory = directory
@@ -18,7 +22,7 @@ final class RecordingWorkspace {
         microphoneURL = directory.appending(path: "microphone.m4a")
         systemAudioURL = directory.appending(path: "system-audio.m4a")
         manifestURL = directory.appending(path: "manifest.json")
-        self.manifest = manifest
+        self._manifest = manifest
     }
 
     static func create(
@@ -51,7 +55,7 @@ final class RecordingWorkspace {
         candidateManifest.captureState = .captureComplete
         candidateManifest.failureMessage = nil
         try persistManifest(candidateManifest)
-        manifest = candidateManifest
+        lock.withLock { _manifest = candidateManifest }
     }
 
     func markFailed(message: String) throws {
@@ -59,7 +63,7 @@ final class RecordingWorkspace {
         candidateManifest.captureState = .failed
         candidateManifest.failureMessage = message
         try persistManifest(candidateManifest)
-        manifest = candidateManifest
+        lock.withLock { _manifest = candidateManifest }
     }
 
     private func persistManifest(_ manifest: RecordingManifest) throws {
