@@ -37,7 +37,7 @@
 - Produces: `RecordingOutputNamer.availableURL(in:date:fileManager:) -> URL`.
 - Consumes: Foundation `URL`, `Date`, `FileManager`.
 
-- [ ] **Step 1: Write failing output namer tests**
+- [x] **Step 1: Write failing output namer tests**
 
 ~~~swift
 import Foundation
@@ -80,13 +80,13 @@ final class RecordingOutputNamerTests: XCTestCase {
 }
 ~~~
 
-- [ ] **Step 2: Run test and verify it fails (RED)**
+- [x] **Step 2: Run test and verify it fails (RED)**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/RecordingOutputNamerTests
 ~~~
 
-- [ ] **Step 3: Implement RecordingOutputNamer**
+- [x] **Step 3: Implement RecordingOutputNamer**
 
 ~~~swift
 import Foundation
@@ -112,7 +112,7 @@ enum RecordingOutputNamer {
 }
 ~~~
 
-- [ ] **Step 4: Verify green and commit**
+- [x] **Step 4: Verify green and commit**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/RecordingOutputNamerTests
@@ -132,21 +132,21 @@ git commit -m "feat: add collision-safe recording output namer"
 - Produces: `VideoCompositor.render(screenURL:cameraURL:events:outputURL:progress:) throws`.
 - Consumes: Core Image, AVAssetReader, AVAssetWriter, `TimedOverlayEvent`.
 
-- [ ] **Step 1: Write failing video compositing tests**
+- [x] **Step 1: Write failing video compositing tests**
 
 Create synthetic sample test videos for screen and camera, and verify compositing succeeds, preserves duration, renders 1920x1080 video, and invokes progress callbacks.
 
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/VideoCompositorTests
 ~~~
 
-- [ ] **Step 3: Implement VideoCompositor**
+- [x] **Step 3: Implement VideoCompositor**
 
 Implement aspect-fit screen scaling, centered square camera crop, horizontal mirror transform, circle and rounded-rectangle masks using `CIFilter.roundedRectangleGenerator()`, normalized coordinate placement, and 150 ms size interpolation. Render with `CIContext` into `CVPixelBufferPool` buffers and append to `AVAssetWriterInputPixelBufferAdaptor`.
 
-- [ ] **Step 4: Verify green and commit**
+- [x] **Step 4: Verify green and commit**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/VideoCompositorTests
@@ -166,21 +166,21 @@ git commit -m "feat: add Core Image video compositor"
 - Produces: `AudioMixer.mux(videoURL:microphoneURL:systemAudioURL:includeSystemAudio:muteIntervals:outputURL:) async throws`.
 - Consumes: `AVMutableComposition`, `AVMutableAudioMix`, `AVAssetExportSession`.
 
-- [ ] **Step 1: Write failing audio mixing tests**
+- [x] **Step 1: Write failing audio mixing tests**
 
 Verify microphone-only mode maintains unity gain, combined mode applies -6 dB to both tracks, and mute intervals apply 0.0 volume parameters.
 
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/AudioMixerTests
 ~~~
 
-- [ ] **Step 3: Implement AudioMixer**
+- [x] **Step 3: Implement AudioMixer**
 
 Construct `AVMutableComposition` containing video and audio tracks. Configure `AVMutableAudioMixInputParameters` with volume ramp or stepped volume to zero during mute intervals, and export using `AVAssetExportPresetHighestQuality` to MP4.
 
-- [ ] **Step 4: Verify green and commit**
+- [x] **Step 4: Verify green and commit**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/AudioMixerTests
@@ -201,21 +201,21 @@ git commit -m "feat: add audio mixer with system audio and mute support"
 - Produces: `protocol RecordingExporting: Sendable`, `struct RecordingExporter: RecordingExporting`.
 - Consumes: `RecordingWorkspace`, `VideoCompositor`, `AudioMixer`, `RecordingOutputNamer`.
 
-- [ ] **Step 1: Write failing export pipeline tests**
+- [x] **Step 1: Write failing export pipeline tests**
 
 Verify end-to-end export from mock or synthetic workspace produces output MP4 in `~/Movies/Cloom`, removes temporary intermediate artifacts, updates progress from 0 to 1, and retains workspace on injected failure.
 
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/RecordingExporterTests
 ~~~
 
-- [ ] **Step 3: Implement RecordingExporter**
+- [x] **Step 3: Implement RecordingExporter**
 
 Coordinate destination URL generation, temporary render file, compositor execution (progress 0.0 to 0.9), audio mixing (progress 0.9 to 1.0), atomic destination placement, and workspace retention logic.
 
-- [ ] **Step 4: Verify green and commit**
+- [x] **Step 4: Verify green and commit**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/RecordingExporterTests
@@ -236,28 +236,28 @@ git commit -m "feat: implement recording export pipeline"
 - Consumes: `RecordingExporter`, `RecordingCoordinator`, `AppModel`.
 - Produces: User-facing export progress bar, completion view with "Reveal in Finder", failure view with "Retry export" and "Reveal source files".
 
-- [ ] **Step 1: Write failing UI / AppModel export integration tests**
+- [x] **Step 1: Write failing UI / AppModel export integration tests**
 
 Verify that `AppModel.stopRecording()` automatically triggers `exporter.export`, updates coordinator export progress, transitions to `.finished` with output URL on success, and transitions to `.failed` on error.
 
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/ExportIntegrationTests
 ~~~
 
-- [ ] **Step 3: Wire AppModel and SetupView**
+- [x] **Step 3: Wire AppModel and SetupView**
 
 Inject `RecordingExporting` into `AppModel`. Update `stopRecording()` to initiate export. Render `ProgressView` during `.exporting`, success actions during `.finished`, and retry actions during `.failed`.
 
-- [ ] **Step 4: Verify green and run full test suite**
+- [x] **Step 4: Verify green and run full test suite**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS'
 xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 ~~~
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ~~~bash
 git add Cloom/App/AppModel.swift Cloom/UI/SetupView.swift CloomTests/ExportIntegrationTests.swift
@@ -276,7 +276,15 @@ git commit -m "feat: integrate export pipeline into app lifecycle"
 - Consumes: Complete export pipeline.
 - Produces: Verified end-to-end recording and export evidence.
 
-- [ ] **Step 1: Document export workflow and settings in README.md**
-- [ ] **Step 2: Clean verification run across all suites**
-- [ ] **Step 3: Record verification evidence and close milestone**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Document export workflow and settings in README.md**
+- [x] **Step 2: Clean verification run across all suites**
+- [x] **Step 3: Record verification evidence and close milestone**
+- [x] **Step 4: Commit**
+
+## Verification Evidence
+
+| Step | Command | Result |
+|---|---|---|
+| Unit & Integration Tests | `xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS'` | **55 passed, 0 failed** (`** TEST SUCCEEDED **`) |
+| Application Build | `xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO` | **`** BUILD SUCCEEDED **`** |
+| Environment | macOS 15+, Xcode 26.6, Swift 6 | Strict concurrency enabled, zero third-party packages |

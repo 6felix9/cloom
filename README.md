@@ -37,5 +37,18 @@ The workspace contains:
 - `system-audio.m4a`: Optional system audio stream (AAC, present when enabled).
 - `overlay.json`: Timestamped log of webcam overlay positions, shapes, and sizes.
 - `manifest.json`: Recording metadata, device IDs, audio mode, and capture state.
+## Video Composition and Output
 
-> **Note on Current Milestone:** This milestone records synchronized, recoverable source media. The final composited 1080p MP4 export is handled in the subsequent exporter milestone. If a recording is stopped or interrupted, source artifacts remain preserved in the workspace for export or manual recovery.
+When you stop recording, Cloom automatically renders and mixes the final video:
+- **Output location**: `~/Movies/Cloom/Cloom YYYY-MM-DD at HH.mm.ss.mp4`
+- **Collision resolution**: If a file with the same timestamp exists, Cloom appends an incrementing suffix (` 2`, ` 3`, etc.).
+- **Visual composition**:
+  - Fits any display or window dimension inside a 1920x1080 canvas without distortion.
+  - Crops and mirrors the webcam feed, applying circular or rounded-square masks.
+  - Places the webcam at its normalized coordinates and applies 150 ms ease-in-out size transitions.
+- **Audio mixing**:
+  - Blends microphone narration and optional Mac system audio (-6 dB each in combined mode).
+  - Respects in-recording mute toggles by silencing microphone audio during muted intervals.
+- **Safety and recovery**:
+  - Raw source files are cleaned up only after the final MP4 has been successfully rendered and verified.
+  - If export fails, source media is retained in `~/Library/Application Support/Cloom/Recordings/<UUID>/` with "Retry export" and "Reveal source files" actions.
