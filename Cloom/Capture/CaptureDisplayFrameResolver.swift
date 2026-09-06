@@ -3,14 +3,13 @@ import CoreGraphics
 enum CaptureDisplayFrameResolver {
     static func resolve(
         contentRect: CGRect,
-        screenFrames: [CGRect],
-        mainScreenFrame: CGRect?
+        screenFrames: [CGRect]
     ) -> CGRect {
-        guard let mainScreenFrame else { return contentRect }
+        guard let primaryScreenFrame = screenFrames.first else { return contentRect }
 
         let appKitContentRect = CGRect(
             x: contentRect.minX,
-            y: mainScreenFrame.maxY - contentRect.maxY,
+            y: primaryScreenFrame.maxY - contentRect.maxY,
             width: contentRect.width,
             height: contentRect.height
         )

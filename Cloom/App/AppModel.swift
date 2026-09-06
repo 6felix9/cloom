@@ -101,11 +101,13 @@ final class AppModel: ObservableObject {
         cameraDevices = deviceDiscovery.devices(for: .camera)
         microphoneDevices = deviceDiscovery.devices(for: .microphone)
 
-        if !cameraDevices.contains(where: { $0.id == settings.cameraDeviceID }) {
+        if settings.includeCamera,
+           !cameraDevices.contains(where: { $0.id == settings.cameraDeviceID }) {
             settings.cameraDeviceID = fallbackDeviceID(for: .camera, in: cameraDevices)
         }
 
-        if !microphoneDevices.contains(where: { $0.id == settings.microphoneDeviceID }) {
+        if settings.includeMicrophone,
+           !microphoneDevices.contains(where: { $0.id == settings.microphoneDeviceID }) {
             settings.microphoneDeviceID = fallbackDeviceID(for: .microphone, in: microphoneDevices)
         }
     }

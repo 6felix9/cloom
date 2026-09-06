@@ -11,8 +11,7 @@ final class CaptureDisplayFrameResolverTests: XCTestCase {
         XCTAssertEqual(
             CaptureDisplayFrameResolver.resolve(
                 contentRect: CGRect(x: 0, y: -900, width: 1440, height: 900),
-                screenFrames: [main, above],
-                mainScreenFrame: main
+                screenFrames: [main, above]
             ),
             above
         )
@@ -50,8 +49,7 @@ final class CaptureDisplayFrameResolverTests: XCTestCase {
     private func resolve(_ contentRect: CGRect, _ screens: [CGRect]) -> CGRect {
         CaptureDisplayFrameResolver.resolve(
             contentRect: contentRect,
-            screenFrames: screens,
-            mainScreenFrame: main
+            screenFrames: screens
         )
     }
 }

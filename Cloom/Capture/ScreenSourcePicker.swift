@@ -76,8 +76,7 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
             contentRect: contentRect,
             presentationFrame: CaptureDisplayFrameResolver.resolve(
                 contentRect: contentRect,
-                screenFrames: NSScreen.screens.map(\.frame),
-                mainScreenFrame: NSScreen.main?.frame
+                screenFrames: NSScreen.screens.map(\.frame)
             ),
             pointPixelScale: CGFloat(filter.pointPixelScale)
         )

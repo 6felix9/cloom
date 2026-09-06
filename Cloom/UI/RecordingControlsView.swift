@@ -28,10 +28,16 @@ struct RecordingControlsView: View {
             Button(role: .destructive) {
                 Task { await model.stopRecording() }
             } label: {
-                Label(
-                    model.recordingCoordinator.phase == .stopping ? "Stopping…" : "Stop Recording",
-                    systemImage: "stop.fill"
-                ).frame(minWidth: 150)
+                if model.recordingCoordinator.phase == .stopping {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("Stopping…")
+                    }
+                    .frame(minWidth: 150)
+                } else {
+                    Label("Stop Recording", systemImage: "stop.fill")
+                        .frame(minWidth: 150)
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(model.recordingCoordinator.phase != .recording)
@@ -79,7 +85,7 @@ struct RecordingControlsView: View {
             }
 
             if visibility.showsMicrophoneMute {
-                controlRow("Microphone") {
+                controlRow("Mute Microphone") {
                     Toggle("Mute microphone", isOn: Binding(
                         get: { model.isMicrophoneMuted }, set: { model.setMicrophoneMuted($0) }
                     ))
