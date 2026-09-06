@@ -1,0 +1,278 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		100000000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000010;
+			remoteInfo = Cloom;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		100000000000000000000030 /* Cloom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cloom.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000031 /* CloomTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CloomTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		100000000000000000000042 /* Exceptions for "Cloom" folder in "Cloom" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Cloom.entitlements,
+				Info.plist,
+			);
+			target = 100000000000000000000010 /* Cloom */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		100000000000000000000040 /* Cloom */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				100000000000000000000042 /* Exceptions for "Cloom" folder in "Cloom" target */,
+			);
+			path = Cloom;
+			sourceTree = "<group>";
+		};
+		100000000000000000000041 /* CloomTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CloomTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		100000000000000000000050 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000051 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000040 /* Cloom */,
+				100000000000000000000041 /* CloomTests */,
+				100000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		100000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000030 /* Cloom.app */,
+				100000000000000000000031 /* CloomTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		100000000000000000000010 /* Cloom */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000070 /* Build configuration list for PBXNativeTarget "Cloom" */;
+			buildPhases = (
+				100000000000000000000060 /* Sources */,
+				100000000000000000000050 /* Frameworks */,
+				100000000000000000000062 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (
+				100000000000000000000040 /* Cloom */,
+			);
+			name = Cloom;
+			packageProductDependencies = ();
+			productName = Cloom;
+			productReference = 100000000000000000000030 /* Cloom.app */;
+			productType = "com.apple.product-type.application";
+		};
+		100000000000000000000011 /* CloomTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000071 /* Build configuration list for PBXNativeTarget "CloomTests" */;
+			buildPhases = (
+				100000000000000000000061 /* Sources */,
+				100000000000000000000051 /* Frameworks */,
+				100000000000000000000063 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (
+				100000000000000000000021 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				100000000000000000000041 /* CloomTests */,
+			);
+			name = CloomTests;
+			packageProductDependencies = ();
+			productName = CloomTests;
+			productReference = 100000000000000000000031 /* CloomTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		100000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					100000000000000000000010 = { CreatedOnToolsVersion = 26.6; };
+					100000000000000000000011 = { CreatedOnToolsVersion = 26.6; TestTargetID = 100000000000000000000010; };
+				};
+			};
+			buildConfigurationList = 100000000000000000000072 /* Build configuration list for PBXProject "Cloom" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = 100000000000000000000002;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 100000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				100000000000000000000010 /* Cloom */,
+				100000000000000000000011 /* CloomTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		100000000000000000000062 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		100000000000000000000063 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		100000000000000000000060 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		100000000000000000000061 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		100000000000000000000021 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 100000000000000000000010 /* Cloom */; targetProxy = 100000000000000000000020 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		100000000000000000000080 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Cloom/Cloom.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Cloom/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tzefoong.Cloom;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		100000000000000000000081 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Cloom/Cloom.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Cloom/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tzefoong.Cloom;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		100000000000000000000082 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tzefoong.CloomTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cloom.app/Contents/MacOS/Cloom";
+		};
+			name = Debug;
+		};
+		100000000000000000000083 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tzefoong.CloomTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cloom.app/Contents/MacOS/Cloom";
+			};
+			name = Release;
+		};
+		100000000000000000000084 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		100000000000000000000085 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+		};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		100000000000000000000070 /* Build configuration list for PBXNativeTarget "Cloom" */ = {isa = XCConfigurationList; buildConfigurations = (100000000000000000000080 /* Debug */, 100000000000000000000081 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		100000000000000000000071 /* Build configuration list for PBXNativeTarget "CloomTests" */ = {isa = XCConfigurationList; buildConfigurations = (100000000000000000000082 /* Debug */, 100000000000000000000083 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		100000000000000000000072 /* Build configuration list for PBXProject "Cloom" */ = {isa = XCConfigurationList; buildConfigurations = (100000000000000000000084 /* Debug */, 100000000000000000000085 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 100000000000000000000001 /* Project object */;
+}
