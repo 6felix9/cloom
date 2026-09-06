@@ -32,7 +32,7 @@ struct TimedOverlayEvent: Codable, Equatable, Sendable {
     let state: OverlayState
 }
 
-private extension OverlaySize {
+extension OverlaySize {
     var presetFraction: Double {
         switch self {
         case .small:

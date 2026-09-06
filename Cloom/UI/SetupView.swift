@@ -4,26 +4,66 @@ struct SetupView: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                header
-                permissionSection
-
-                if model.isReadyToConfigure {
-                    recordingSection
-                    overlaySection
-                    footer
-                } else {
-                    permissionHint
-                }
+        Group {
+            switch model.recordingCoordinator.phase {
+            case .preparing, .countdown, .recording:
+                RecordingControlsView(model: model)
+            case .exporting, .finished, .failed:
+                completionView
+            case .idle:
+                setupContent
             }
-            .padding(28)
         }
         .frame(minWidth: 620, minHeight: 660)
         .task {
             await model.refreshPermissions()
             await model.refreshDevices()
         }
+    }
+
+    private var setupContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                header
+                permissionSection
+                if model.isReadyToConfigure {
+                    recordingSection
+                    overlaySection
+                    footer
+                } else { permissionHint }
+            }
+            .padding(28)
+        }
+    }
+
+    @ViewBuilder
+    private var completionView: some View {
+        VStack(spacing: 20) {
+            RecordingStatusView(coordinator: model.recordingCoordinator)
+            switch model.recordingCoordinator.phase {
+            case .exporting:
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 58)).foregroundStyle(.green)
+                Text("Source recording complete").font(.title2.bold())
+                Text("Source media has been saved to the recoverable workspace.").foregroundStyle(.secondary)
+                Button("Reveal source files") { model.revealCurrentRecording() }.buttonStyle(.borderedProminent)
+                Button("Record another") { model.recordAnother() }
+            case let .finished(url):
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 58)).foregroundStyle(.green)
+                Text("Your recording is ready").font(.title2.bold())
+                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.borderedProminent)
+                Button("Record another") { model.recordAnother() }
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 52)).foregroundStyle(.orange)
+                if let error = model.recordingError { Text(error).multilineTextAlignment(.center).frame(maxWidth: 460) }
+                HStack {
+                    Button("Reveal source files") { model.revealCurrentRecording() }
+                    Button("Start over") { model.recordAnother() }
+                }
+            default: EmptyView()
+            }
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var header: some View {
@@ -118,6 +158,7 @@ struct SetupView: View {
                 RecordingStatusView(coordinator: model.recordingCoordinator)
                 Spacer()
                 Button {
+                    Task { await model.startRecording() }
                 } label: {
                     Label("Record", systemImage: "record.circle")
                         .frame(minWidth: 90)

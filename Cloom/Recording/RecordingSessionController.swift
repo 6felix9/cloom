@@ -84,6 +84,7 @@ final class RecordingSessionController {
     private(set) var overlayStore: OverlayEventStore?
     private(set) var epoch: Double?
     private(set) var cleanupConcerns: [String] = []
+    var previewSession: AVCaptureSession { cameraCapture.previewSession }
 
     init(coordinator: RecordingCoordinator,
          screenCapture: any ScreenCapturing = ScreenCaptureService(),
