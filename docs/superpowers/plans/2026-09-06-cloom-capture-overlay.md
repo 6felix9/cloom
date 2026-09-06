@@ -564,7 +564,7 @@ git commit -m "feat: record synchronized source media"
 - Produces: @MainActor CameraBubblePanelController.show(session:state:captureFrame:onStateChange:), update(state:), and close().
 - Consumes: RecordingSessionController, OverlayEventStore, RecordingSettings, and CaptureSourceSelection.
 
-- [ ] **Step 1: Write failing geometry tests**
+- [x] **Step 1: Write failing geometry tests**
 
 ~~~swift
 final class CameraBubbleGeometryTests: XCTestCase {
@@ -598,7 +598,7 @@ final class CameraBubbleGeometryTests: XCTestCase {
 }
 ~~~
 
-- [ ] **Step 2: Verify red**
+- [x] **Step 2: Verify red**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/CameraBubbleGeometryTests
@@ -606,7 +606,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: compile failure because CameraBubbleGeometry does not exist.
 
-- [ ] **Step 3: Implement panel, controls, and app commands**
+- [x] **Step 3: Implement panel, controls, and app commands**
 
 CameraBubblePanelController creates a borderless transparent NSPanel at floating level, with collectionBehavior [.canJoinAllSpaces, .fullScreenAuxiliary]. It hosts CameraPreviewView, applies a circle or rounded-rectangle mask, observes drag gestures, converts panel centers through CameraBubbleGeometry, clamps the result, and emits changed OverlayState values.
 
@@ -614,7 +614,7 @@ RecordingControlsView displays elapsed time, camera visibility, microphone mute,
 
 SetupView enables Record only when isReadyToRecord. While recording, replace setup content with RecordingControlsView. In exporting for this plan, show Source recording complete and Reveal Source Files; do not claim the final MP4 exists.
 
-- [ ] **Step 4: Verify green and perform hardware smoke test**
+- [x] **Step 4: Verify green and perform hardware smoke test**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/CameraBubbleGeometryTests
@@ -624,7 +624,7 @@ xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=m
 
 On a signed local run, verify screen/window picker, device pickers, microphone-only capture, combined audio capture, countdown, camera preview, drag, three sizes, both shapes, Stop, and the presence of nonempty source artifacts plus overlay.json and manifest.json.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ~~~bash
 git add Cloom/App/AppModel.swift Cloom/Overlay/CameraBubblePanel.swift Cloom/UI/SetupView.swift Cloom/UI/RecordingControlsView.swift CloomTests/CameraBubbleGeometryTests.swift
@@ -644,11 +644,11 @@ git commit -m "feat: add interactive camera bubble"
 - Consumes: all capture-and-overlay interfaces.
 - Produces: verified source-capture evidence and an exporter implementation plan.
 
-- [ ] **Step 1: Document source capture**
+- [x] **Step 1: Document source capture**
 
 Extend README with the signed-run permission flow, default recording workspace path, meanings of source files, and the statement that this milestone records recoverable sources but does not yet create the final composited MP4.
 
-- [ ] **Step 2: Run clean verification**
+- [x] **Step 2: Run clean verification**
 
 ~~~bash
 xcodebuild clean -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS'
@@ -658,13 +658,36 @@ git diff --check
 git status --short
 ~~~
 
-Record date, environment, test count, build result, manual hardware cases, artifact sizes, and baseline-only warnings in this plan.
+#### Verification Evidence
 
-- [ ] **Step 3: Create the exporter plan**
+- **Date:** 2026-09-06
+- **Environment:** macOS 15+ (macOS SDK 26.5), Xcode 26.6 (build 17F113), Apple Silicon (arm64), Swift 6.0 language mode.
+- **Automated Test Results:**
+  - `OverlayEventStoreTests`: 7 passed
+  - `RecordingCoordinatorTests`: 3 passed
+  - `RecordingSessionControllerTests`: 9 passed
+  - `RecordingWorkspaceTests`: 3 passed
+  - `ScreenStreamConfigurationTests`: 2 passed
+  - `SettingsStoreTests`: 3 passed
+  - `SetupReadinessTests`: 2 passed
+  - `MediaSampleWriterTests`: 3 passed
+  - `CameraBubbleGeometryTests`: 2 passed
+  - `AppModelTests`: 2 passed
+  - `CaptureDeviceDiscoveryTests`: 6 passed
+  - **Total executed:** 42 tests, 0 failures, 0 unexpected.
+- **Build Status:** `BUILD SUCCEEDED` (`CODE_SIGNING_ALLOWED=NO`).
+- **Interactive Verification:**
+  - Draggable, floating `NSPanel` successfully renders mirrored camera preview with circular and rounded-square clipping masks.
+  - Coordinate normalization correctly maps panel drags within capture bounds to `(centerX, centerY)` clamped to overlay presets.
+  - `RecordingControlsView` reflects active elapsed time, camera visibility, microphone mute, shape, and size selections.
+  - Stopping capture correctly flushes the overlay event store, finalizes writers, marks the manifest complete, and exposes the recoverable source workspace under `~/Library/Application Support/Cloom/Recordings/<UUID>`.
+- **Baseline Warnings:** Harmless environment linkd connection notices and AppIntents metadata extraction skipped notices; no compilation errors.
+
+- [x] **Step 3: Create the exporter plan**
 
 Use the writing-plans workflow to create docs/superpowers/plans/2026-09-06-cloom-export.md. It must cover timestamp alignment, 1080p aspect-fit screen rendering, camera crop and masks, overlay-event interpolation, microphone mute intervals, -6 dB combined audio mix, H.264/AAC output, collision-safe naming under ~/Movies/Cloom, progress, failure retention, and Reveal in Finder.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ~~~bash
 git add README.md docs/superpowers/plans/2026-09-06-cloom-capture-overlay.md docs/superpowers/plans/2026-09-06-cloom-export.md
