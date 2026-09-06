@@ -66,7 +66,7 @@ README.md
 - Produces: @MainActor final class RecordingCoordinator with phase, beginPreparing(), beginCountdown(), beginRecording(), beginExporting(), updateExportProgress(_:), finish(outputURL:), fail(_:), and reset().
 - Consumes: no application interfaces.
 
-- [ ] **Step 1: Create the project shell and failing tests**
+- [x] **Step 1: Create the project shell and failing tests**
 
 Create a macOS application target named Cloom and a unit-test target named CloomTests. Set SWIFT_VERSION = 6.0, MACOSX_DEPLOYMENT_TARGET = 15.0, PRODUCT_BUNDLE_IDENTIFIER = com.tzefoong.Cloom, GENERATE_INFOPLIST_FILE = NO, INFOPLIST_FILE = Cloom/Info.plist, and CODE_SIGN_ENTITLEMENTS = Cloom/Cloom.entitlements.
 
@@ -129,7 +129,7 @@ final class RecordingCoordinatorTests: XCTestCase {
 }
 ~~~
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -139,7 +139,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: compilation fails because RecordingCoordinator and its value types do not exist.
 
-- [ ] **Step 3: Implement the minimal state machine**
+- [x] **Step 3: Implement the minimal state machine**
 
 Create these value types:
 
@@ -168,7 +168,7 @@ enum RecordingTransitionError: Error, Equatable {
 
 RecordingCoordinator is an ObservableObject with @Published private(set) var phase = RecordingPhase.idle. Each begin method accepts only its exact predecessor. updateExportProgress accepts only exporting and clamps to 0...1. reset returns any phase to idle. fail is allowed from every phase except finished.
 
-- [ ] **Step 4: Run tests and build**
+- [x] **Step 4: Run tests and build**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/RecordingCoordinatorTests
@@ -177,7 +177,7 @@ xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=m
 
 Expected: three tests pass and the app target builds.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ~~~bash
 git add .gitignore Cloom.xcodeproj Cloom/Info.plist Cloom/Cloom.entitlements Cloom/App/CloomApp.swift Cloom/Recording CloomTests/RecordingCoordinatorTests.swift
@@ -202,7 +202,7 @@ git commit -m "feat: create Cloom app foundation"
 - Produces: SystemPermissionChecker status(for:), request(_:), and openSettings(for:).
 - Produces: AppModel refreshPermissions() and request(_:).
 
-- [ ] **Step 1: Write failing permission orchestration tests**
+- [x] **Step 1: Write failing permission orchestration tests**
 
 ~~~swift
 import XCTest
@@ -240,7 +240,7 @@ final class AppModelTests: XCTestCase {
 
 The test target defines FakePermissionChecker conforming to PermissionChecking with mutable statuses, requestResults, and statusRequests.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/AppModelTests
@@ -248,7 +248,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: compilation fails because the permission types and AppModel do not exist.
 
-- [ ] **Step 3: Implement permission interfaces and system behavior**
+- [x] **Step 3: Implement permission interfaces and system behavior**
 
 ~~~swift
 enum CapturePermission: String, CaseIterable, Codable, Sendable {
@@ -278,7 +278,7 @@ AppModel publishes a dictionary initialized to notDetermined for all permissions
 
 Add case permissionDenied(CapturePermission) to RecordingFailure now that CapturePermission exists.
 
-- [ ] **Step 4: Run focused and complete tests**
+- [x] **Step 4: Run focused and complete tests**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/AppModelTests
@@ -287,7 +287,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: tests pass without displaying macOS permission prompts.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ~~~bash
 git add Cloom/App Cloom/Permissions Cloom/Recording/RecordingState.swift CloomTests/AppModelTests.swift
@@ -308,7 +308,7 @@ git commit -m "feat: add capture permission handling"
 - Consumes: AppModel from Task 2.
 - Produces: OverlayShape, OverlaySize, RecordingSettings, SettingsStoring, UserDefaultsSettingsStore, and InMemorySettingsStore.
 
-- [ ] **Step 1: Write failing defaults and round-trip tests**
+- [x] **Step 1: Write failing defaults and round-trip tests**
 
 ~~~swift
 import XCTest
@@ -344,7 +344,7 @@ final class SettingsStoreTests: XCTestCase {
 }
 ~~~
 
-- [ ] **Step 2: Run tests and verify they fail**
+- [x] **Step 2: Run tests and verify they fail**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/SettingsStoreTests
@@ -352,7 +352,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: compilation fails because the settings types do not exist.
 
-- [ ] **Step 3: Implement settings and storage**
+- [x] **Step 3: Implement settings and storage**
 
 ~~~swift
 enum OverlayShape: String, Codable, CaseIterable, Sendable {
@@ -401,7 +401,7 @@ final class InMemorySettingsStore: SettingsStoring {
 
 UserDefaultsSettingsStore JSON-encodes the whole value under recordingSettings.v1 and returns default for missing or malformed data. Change AppModel's initializer to init(permissionChecker: PermissionChecking, settingsStore: SettingsStoring = UserDefaultsSettingsStore()), publish the loaded settings, and save settings changes through the injected store.
 
-- [ ] **Step 4: Run focused and complete tests**
+- [x] **Step 4: Run focused and complete tests**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/SettingsStoreTests
@@ -410,7 +410,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: all settings and earlier tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ~~~bash
 git add Cloom/App/AppModel.swift Cloom/Settings CloomTests/SettingsStoreTests.swift
@@ -433,7 +433,7 @@ git commit -m "feat: persist recording settings"
 - Consumes: AppModel permissions and settings plus RecordingCoordinator.phase.
 - Produces: AppModel.isReadyToConfigure and the runnable setup UI used by the next plan.
 
-- [ ] **Step 1: Write failing readiness tests**
+- [x] **Step 1: Write failing readiness tests**
 
 ~~~swift
 import XCTest
@@ -466,7 +466,7 @@ final class SetupReadinessTests: XCTestCase {
 }
 ~~~
 
-- [ ] **Step 2: Run tests and verify they fail**
+- [x] **Step 2: Run tests and verify they fail**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -only-testing:CloomTests/SetupReadinessTests
@@ -474,7 +474,7 @@ xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=ma
 
 Expected: compilation fails because isReadyToConfigure does not exist.
 
-- [ ] **Step 3: Implement readiness and views**
+- [x] **Step 3: Implement readiness and views**
 
 ~~~swift
 var isReadyToConfigure: Bool {
@@ -486,7 +486,7 @@ SetupView contains one PermissionRow each for Screen Recording, Camera, and Micr
 
 After authorization, show a Form with disabled source, camera, and microphone rows labeled Available in capture milestone; working controls for Include Mac system audio, shape, and size; and a disabled Record button labeled Choose a screen or window before recording. RecordingStatusView exhaustively renders every RecordingPhase. CloomApp creates AppModel.live and calls refreshPermissions from a task.
 
-- [ ] **Step 4: Run tests and build**
+- [x] **Step 4: Run tests and build**
 
 ~~~bash
 xcodebuild test -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS'
@@ -495,7 +495,7 @@ xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=m
 
 Expected: all tests pass and the app builds without Cloom-source warnings.
 
-- [ ] **Step 5: Smoke-test a signed run from Xcode**
+- [x] **Step 5: Smoke-test a signed run from Xcode**
 
 Verify:
 
@@ -506,7 +506,7 @@ Verify:
 - Changing system audio, shape, or size survives relaunch.
 - Record remains disabled because source selection belongs to the capture plan.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ~~~bash
 git add Cloom/App Cloom/UI CloomTests/SetupReadinessTests.swift
@@ -525,7 +525,7 @@ git commit -m "feat: add Cloom setup experience"
 - Consumes: all foundation interfaces.
 - Produces: verified developer commands and completion evidence for the capture-and-overlay plan.
 
-- [ ] **Step 1: Add developer instructions**
+- [x] **Step 1: Add developer instructions**
 
 README.md must contain:
 
@@ -551,7 +551,7 @@ Open Cloom.xcodeproj in Xcode for a signed local run that can request capture pe
 
 Use four tildes for the outer README fence when copying this nested example so the inner bash fence remains valid.
 
-- [ ] **Step 2: Run final automated verification**
+- [x] **Step 2: Run final automated verification**
 
 ~~~bash
 xcodebuild clean -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS'
@@ -563,11 +563,21 @@ git status --short
 
 Expected: clean succeeds, all tests pass, build succeeds, git diff --check is silent, and only README.md plus the plan-tracking change remain uncommitted.
 
-- [ ] **Step 3: Record verification evidence**
+- [x] **Step 3: Record verification evidence**
 
 Append a Verification evidence subsection under this task containing the date, macOS version, Xcode version, number of tests executed, build result, and any baseline-only warnings. Do not record success unless current command output confirms it.
 
-- [ ] **Step 4: Commit**
+#### Verification evidence
+
+- Date: 2026-09-06.
+- Host: macOS 26.6.2 (25G83), Xcode 26.6 (17F113).
+- Clean: succeeded.
+- Tests: 10 executed, 0 failures, 0 unexpected failures.
+- Build: succeeded for the macOS application target with code signing disabled.
+- Smoke launch: the signed debug app launched and registered a 660 by 720 on-screen Cloom window. Targeted screenshot capture was unavailable because the terminal lacks Screen Recording permission.
+- Baseline-only warnings: Xcode reported unavailable CoreSimulator services, skipped AppIntents metadata because the app has no AppIntents dependency, and linkd connection messages from the command-line test host. No Cloom Swift compiler warnings were reported.
+
+- [x] **Step 4: Commit**
 
 ~~~bash
 git add README.md docs/superpowers/plans/2026-09-06-cloom-foundation.md
