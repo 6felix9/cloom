@@ -58,6 +58,44 @@ final class RecordingExporterTests: XCTestCase, @unchecked Sendable {
         }
     }
 
+    func testDisabledCameraIsExcludedEvenWhenArtifactExists() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        let workspace = try RecordingWorkspace.create(baseDirectory: root, settings: settings)
+        try Data("camera artifact".utf8).write(to: workspace.cameraURL)
+
+        XCTAssertNil(RecordingExporter.cameraURL(for: workspace))
+    }
+
+    func testExportWithoutCameraOrAudioCreatesVideoOnlyMP4() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var settings = RecordingSettings.default
+        settings.includeCamera = false
+        settings.includeMicrophone = false
+        let workspace = try RecordingWorkspace.create(baseDirectory: root, settings: settings)
+        let screenWriter = try MediaSampleWriter.video(
+            url: workspace.screenURL, width: 320, height: 240, epoch: 100
+        )
+        try screenWriter.append(videoSample(at: 100))
+        try screenWriter.append(videoSample(at: 100.1))
+        try await screenWriter.finish()
+
+        let output = try await RecordingExporter(
+            outputDirectory: root.appending(path: "Movies", directoryHint: .isDirectory)
+        ).export(workspace: workspace) { _ in }
+        let asset = AVURLAsset(url: output)
+
+        let videoTracks = try await asset.loadTracks(withMediaType: .video)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        XCTAssertEqual(videoTracks.count, 1)
+        XCTAssertEqual(audioTracks.count, 0)
+    }
+
     private func audioSample(at seconds: Double) throws -> CMSampleBuffer {
         var description = AudioStreamBasicDescription(
             mSampleRate: 48_000, mFormatID: kAudioFormatLinearPCM,

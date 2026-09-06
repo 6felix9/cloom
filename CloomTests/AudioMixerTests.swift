@@ -103,6 +103,69 @@ final class AudioMixerTests: XCTestCase, @unchecked Sendable {
         }
     }
 
+    func testMuxingWithoutAnyAudioCreatesVideoOnlyMP4() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let videoURL = root.appending(path: "video.mov")
+        let missingAudioURL = root.appending(path: "missing.m4a")
+        let outputURL = root.appending(path: "output.mp4")
+        let videoWriter = try MediaSampleWriter.video(url: videoURL, width: 320, height: 240, epoch: 10)
+        try videoWriter.append(videoSample(at: 10))
+        try videoWriter.append(videoSample(at: 10.2))
+        try await videoWriter.finish()
+
+        try await AudioMixer.mux(
+            videoURL: videoURL,
+            microphoneURL: missingAudioURL,
+            systemAudioURL: missingAudioURL,
+            includeSystemAudio: false,
+            outputURL: outputURL
+        )
+
+        let asset = AVURLAsset(url: outputURL)
+        let videoTracks = try await asset.loadTracks(withMediaType: .video)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        XCTAssertEqual(videoTracks.count, 1)
+        XCTAssertEqual(audioTracks.count, 0)
+    }
+
+    func testMuxingWithSystemAudioAndNoMicrophoneCreatesAudioTrack() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let videoURL = root.appending(path: "video.mov")
+        let missingMicrophoneURL = root.appending(path: "missing-mic.m4a")
+        let systemAudioURL = root.appending(path: "system.m4a")
+        let outputURL = root.appending(path: "output.mp4")
+        let videoWriter = try MediaSampleWriter.video(url: videoURL, width: 320, height: 240, epoch: 10)
+        try videoWriter.append(videoSample(at: 10))
+        try videoWriter.append(videoSample(at: 10.2))
+        try await videoWriter.finish()
+        let audioWriter = try MediaSampleWriter.audio(
+            url: systemAudioURL,
+            firstSample: audioSample(at: 10),
+            epoch: 10
+        )
+        try audioWriter.append(audioSample(at: 10))
+        try audioWriter.append(audioSample(at: 10.1))
+        try await audioWriter.finish()
+
+        try await AudioMixer.mux(
+            videoURL: videoURL,
+            microphoneURL: missingMicrophoneURL,
+            systemAudioURL: systemAudioURL,
+            includeSystemAudio: true,
+            outputURL: outputURL
+        )
+
+        let asset = AVURLAsset(url: outputURL)
+        let videoTracks = try await asset.loadTracks(withMediaType: .video)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        XCTAssertEqual(videoTracks.count, 1)
+        XCTAssertEqual(audioTracks.count, 1)
+    }
+
     private func audioSample(at seconds: Double) throws -> CMSampleBuffer {
         var description = AudioStreamBasicDescription(
             mSampleRate: 48_000, mFormatID: kAudioFormatLinearPCM,

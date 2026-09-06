@@ -24,6 +24,10 @@ struct RecordingExporter: RecordingExporting {
         self.outputDirectory = outputDirectory
     }
 
+    static func cameraURL(for workspace: RecordingWorkspace) -> URL? {
+        workspace.manifest.settings.includeCamera ? workspace.cameraURL : nil
+    }
+
     func export(
         workspace: RecordingWorkspace,
         muteIntervals: [MuteInterval] = [],
@@ -58,7 +62,7 @@ struct RecordingExporter: RecordingExporting {
         try await Task.detached(priority: .userInitiated) {
             try VideoCompositor.render(
                 screenURL: workspace.screenURL,
-                cameraURL: workspace.cameraURL,
+                cameraURL: Self.cameraURL(for: workspace),
                 events: events,
                 outputURL: renderedVideoURL
             ) { fraction in
