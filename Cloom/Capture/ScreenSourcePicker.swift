@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 @preconcurrency import ScreenCaptureKit
 
 @MainActor
@@ -67,11 +68,17 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
             return
         }
 
+        let contentRect = filter.contentRect
         let selection = CaptureSourceSelection(
             filter: filter,
             title: title,
             kind: kind,
-            contentRect: filter.contentRect,
+            contentRect: contentRect,
+            presentationFrame: CaptureDisplayFrameResolver.resolve(
+                contentRect: contentRect,
+                screenFrames: NSScreen.screens.map(\.frame),
+                mainScreenFrame: NSScreen.main?.frame
+            ),
             pointPixelScale: CGFloat(filter.pointPixelScale)
         )
         resume(with: .success(selection))

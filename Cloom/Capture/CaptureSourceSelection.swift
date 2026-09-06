@@ -12,6 +12,7 @@ protocol ScreenCaptureSelection: AnyObject, Sendable {
     var title: String { get }
     var kind: CaptureSourceKind { get }
     var contentRect: CGRect { get }
+    var presentationFrame: CGRect { get }
     var pointPixelScale: CGFloat { get }
 }
 
@@ -21,6 +22,7 @@ final class CaptureSourceSelection: ScreenCaptureSelection, @unchecked Sendable 
     let title: String
     let kind: CaptureSourceKind
     let contentRect: CGRect
+    let presentationFrame: CGRect
     let pointPixelScale: CGFloat
 
     init(
@@ -28,12 +30,14 @@ final class CaptureSourceSelection: ScreenCaptureSelection, @unchecked Sendable 
         title: String,
         kind: CaptureSourceKind,
         contentRect: CGRect,
+        presentationFrame: CGRect,
         pointPixelScale: CGFloat
     ) {
         self.filter = filter
         self.title = title
         self.kind = kind
         self.contentRect = contentRect
+        self.presentationFrame = presentationFrame
         self.pointPixelScale = pointPixelScale
     }
 }

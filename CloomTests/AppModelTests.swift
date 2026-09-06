@@ -164,6 +164,7 @@ final class FakeScreenCaptureSelection: ScreenCaptureSelection {
     private(set) var title: String
     let kind: CaptureSourceKind = .display
     let contentRect = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+    let presentationFrame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
     let pointPixelScale: CGFloat = 1
 
     var filter: SCContentFilter {

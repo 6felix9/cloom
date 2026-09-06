@@ -145,7 +145,7 @@ final class AppModel: ObservableObject {
                 activeMuteStartSeconds = 0.0
             }
             bubblePanel.show(session: sessionController.previewSession, state: overlayState,
-                             captureFrame: source.contentRect) { [weak self] state in
+                             captureFrame: source.presentationFrame) { [weak self] state in
                 self?.applyOverlay(state)
             }
             beginElapsedTimer()

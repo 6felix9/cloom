@@ -348,5 +348,6 @@ private final class SessionTestScreenSelection: ScreenCaptureSelection {
     let title = "Test Display"
     let kind = CaptureSourceKind.display
     let contentRect = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+    let presentationFrame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
     let pointPixelScale = CGFloat(2)
 }
