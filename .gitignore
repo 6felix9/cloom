@@ -1,6 +1,14 @@
+# macOS
 .DS_Store
-.worktrees/
-DerivedData/
+
+# Xcode & Build Artifacts
 build/
+DerivedData/
 *.xcuserstate
 xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Development Worktrees
+.worktrees/
