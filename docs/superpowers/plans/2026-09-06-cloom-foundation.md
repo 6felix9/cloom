@@ -584,6 +584,6 @@ git add README.md docs/superpowers/plans/2026-09-06-cloom-foundation.md
 git commit -m "docs: add Cloom development guide"
 ~~~
 
-- [ ] **Step 5: Prepare the next plan**
+- [x] **Step 5: Prepare the next plan**
 
 Create docs/superpowers/plans/2026-09-06-cloom-capture-overlay.md using the writing-plans workflow. It must consume the interfaces in this plan and cover ScreenCaptureKit source selection, screen/microphone/optional-system-audio source writers, AVFoundation device discovery and camera capture, normalized overlay events, the floating NSPanel, countdown, controls, and capture-workspace manifests. Do not begin exporter work in that plan.
