@@ -28,8 +28,11 @@ final class AppModel: ObservableObject {
     private let deviceDiscovery: CaptureDeviceDiscovering
     private let sourcePicker: ScreenSourcePicking
     private let sessionController: RecordingSessionController
+    private let exporter: any RecordingExporting
     private let bubblePanel = CameraBubblePanelController()
     private var elapsedTask: Task<Void, Never>?
+    private var muteIntervals: [MuteInterval] = []
+    private var activeMuteStartSeconds: Double?
 
     init(
         permissionChecker: PermissionChecking,
@@ -37,13 +40,15 @@ final class AppModel: ObservableObject {
         recordingCoordinator: RecordingCoordinator = RecordingCoordinator(),
         deviceDiscovery: CaptureDeviceDiscovering = AVCaptureDeviceDiscovery(),
         sourcePicker: ScreenSourcePicking = ScreenSourcePicker(),
-        sessionController: RecordingSessionController? = nil
+        sessionController: RecordingSessionController? = nil,
+        exporter: any RecordingExporting = RecordingExporter()
     ) {
         self.permissionChecker = permissionChecker
         self.settingsStore = settingsStore
         self.recordingCoordinator = recordingCoordinator
         self.deviceDiscovery = deviceDiscovery
         self.sourcePicker = sourcePicker
+        self.exporter = exporter
         let loadedSettings = settingsStore.load()
         self.settings = loadedSettings
         self.overlayState = OverlayState(centerX: 0.86, centerY: 0.82,
@@ -126,10 +131,15 @@ final class AppModel: ObservableObject {
         guard let source = selectedCaptureSource else { return }
         recordingError = nil
         warnings = []
+        muteIntervals = []
+        activeMuteStartSeconds = nil
         overlayState.shape = settings.overlayShape
         overlayState.size = settings.overlaySize
         do {
             try await sessionController.start(configuration: RecordingSessionConfiguration(source: source, settings: settings))
+            if isMicrophoneMuted {
+                activeMuteStartSeconds = 0.0
+            }
             bubblePanel.show(session: sessionController.previewSession, state: overlayState,
                              captureFrame: source.contentRect) { [weak self] state in
                 self?.applyOverlay(state)
@@ -144,8 +154,14 @@ final class AppModel: ObservableObject {
         elapsedTask?.cancel()
         elapsedTask = nil
         bubblePanel.close()
+        if let start = activeMuteStartSeconds, let epoch = sessionController.epoch {
+            let nowSeconds = max(start, CMClockGetTime(CMClockGetHostTimeClock()).seconds - epoch)
+            muteIntervals.append(MuteInterval(startSeconds: start, endSeconds: nowSeconds))
+            activeMuteStartSeconds = nil
+        }
         do {
             try await sessionController.stop()
+            try await exportCurrentWorkspace()
         } catch {
             recordingError = error.localizedDescription
         }
@@ -153,6 +169,16 @@ final class AppModel: ObservableObject {
 
     func setMicrophoneMuted(_ muted: Bool) {
         isMicrophoneMuted = muted
+        guard let epoch = sessionController.epoch, recordingCoordinator.phase == .recording else { return }
+        let nowSeconds = max(0, CMClockGetTime(CMClockGetHostTimeClock()).seconds - epoch)
+        if muted {
+            if activeMuteStartSeconds == nil {
+                activeMuteStartSeconds = nowSeconds
+            }
+        } else if let start = activeMuteStartSeconds {
+            muteIntervals.append(MuteInterval(startSeconds: start, endSeconds: nowSeconds))
+            activeMuteStartSeconds = nil
+        }
     }
 
     func setCameraVisible(_ visible: Bool) {
@@ -178,15 +204,46 @@ final class AppModel: ObservableObject {
         bubblePanel.update(state: state)
     }
 
+    func retryExport() async {
+        recordingError = nil
+        do {
+            try recordingCoordinator.beginExporting()
+            try await exportCurrentWorkspace()
+        } catch {
+            recordingError = error.localizedDescription
+        }
+    }
+
     func revealCurrentRecording() {
         guard let workspace = sessionController.workspace else { return }
         NSWorkspace.shared.activateFileViewerSelecting([workspace.directory])
+    }
+
+    func revealOutput(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     func recordAnother() {
         recordingError = nil
         elapsedSeconds = 0
         recordingCoordinator.reset()
+    }
+
+    private func exportCurrentWorkspace() async throws {
+        guard let workspace = sessionController.workspace else { return }
+        do {
+            let output = try await exporter.export(workspace: workspace, muteIntervals: muteIntervals) { [weak self] progress in
+                Task { @MainActor in
+                    try? self?.recordingCoordinator.updateExportProgress(progress)
+                }
+            }
+            try recordingCoordinator.finish(outputURL: output)
+            try? FileManager.default.removeItem(at: workspace.directory)
+        } catch {
+            recordingError = error.localizedDescription
+            recordingCoordinator.fail(.exportFailed(error.localizedDescription))
+            throw error
+        }
     }
 
     private func beginElapsedTimer() {

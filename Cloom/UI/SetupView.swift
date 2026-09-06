@@ -41,21 +41,19 @@ struct SetupView: View {
         VStack(spacing: 20) {
             RecordingStatusView(coordinator: model.recordingCoordinator)
             switch model.recordingCoordinator.phase {
-            case .exporting:
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 58)).foregroundStyle(.green)
-                Text("Source recording complete").font(.title2.bold())
-                Text("Source media has been saved to the recoverable workspace.").foregroundStyle(.secondary)
-                Button("Reveal source files") { model.revealCurrentRecording() }.buttonStyle(.borderedProminent)
-                Button("Record another") { model.recordAnother() }
+            case let .exporting(progress):
+                ProgressView(value: progress).frame(width: 320)
+                Text("Compositing your 1080p recording…").foregroundStyle(.secondary)
             case let .finished(url):
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 58)).foregroundStyle(.green)
                 Text("Your recording is ready").font(.title2.bold())
-                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }.buttonStyle(.borderedProminent)
+                Button("Reveal in Finder") { model.revealOutput(url) }.buttonStyle(.borderedProminent)
                 Button("Record another") { model.recordAnother() }
             case .failed:
                 Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 52)).foregroundStyle(.orange)
                 if let error = model.recordingError { Text(error).multilineTextAlignment(.center).frame(maxWidth: 460) }
                 HStack {
+                    Button("Retry export") { Task { await model.retryExport() } }.buttonStyle(.borderedProminent)
                     Button("Reveal source files") { model.revealCurrentRecording() }
                     Button("Start over") { model.recordAnother() }
                 }
