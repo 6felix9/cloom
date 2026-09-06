@@ -37,10 +37,10 @@ Select your development team under **Signing & Capabilities** (required by macOS
 ### 2. Or Run from Command Line
 ```bash
 # Build the application
-xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO
 
 # Launch the built app
-open ~/Library/Developer/Xcode/DerivedData/Cloom-*/Build/Products/Debug/Cloom.app
+open build/Build/Products/Debug/Cloom.app
 ```
 
 ---
