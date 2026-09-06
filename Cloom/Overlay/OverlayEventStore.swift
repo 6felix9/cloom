@@ -11,8 +11,8 @@ final class OverlayEventStore {
 
     init(fileURL: URL, initialState: OverlayState) throws {
         self.fileURL = fileURL
-        events = [TimedOverlayEvent(timeSeconds: 0, state: initialState)]
-        try persist()
+        events = [TimedOverlayEvent(timeSeconds: 0, state: initialState.clamped())]
+        try persist(events)
     }
 
     func append(state: OverlayState, at timeSeconds: Double) throws {
@@ -22,12 +22,14 @@ final class OverlayEventStore {
         guard let latestEvent = events.last, timeSeconds >= latestEvent.timeSeconds else {
             throw OverlayEventStoreError.nonMonotonicTimestamp
         }
-        guard latestEvent.state != state else {
+        let clampedState = state.clamped()
+        guard latestEvent.state != clampedState else {
             return
         }
 
-        events.append(TimedOverlayEvent(timeSeconds: timeSeconds, state: state))
-        try persist()
+        let candidateEvents = events + [TimedOverlayEvent(timeSeconds: timeSeconds, state: clampedState)]
+        try persist(candidateEvents)
+        events = candidateEvents
     }
 
     func state(at timeSeconds: Double) -> OverlayState {
@@ -35,10 +37,10 @@ final class OverlayEventStore {
     }
 
     func finish() throws {
-        try persist()
+        try persist(events)
     }
 
-    private func persist() throws {
+    private func persist(_ events: [TimedOverlayEvent]) throws {
         let data = try JSONEncoder().encode(events)
         try data.write(to: fileURL, options: .atomic)
     }

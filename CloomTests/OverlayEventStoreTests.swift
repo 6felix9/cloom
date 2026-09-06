@@ -37,6 +37,77 @@ final class OverlayEventStoreTests: XCTestCase {
         ])
     }
 
+    func testStoreClampsInitialAndAppendedStatesBeforePersisting() throws {
+        let url = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let initial = OverlayState(
+            centerX: 0,
+            centerY: 1,
+            size: .medium,
+            shape: .circle,
+            isVisible: true
+        )
+        let store = try OverlayEventStore(fileURL: url, initialState: initial)
+        let appended = OverlayState(
+            centerX: 1,
+            centerY: 0,
+            size: .large,
+            shape: .roundedSquare,
+            isVisible: false
+        )
+
+        try store.append(state: appended, at: 1)
+
+        XCTAssertEqual(store.events, [
+            TimedOverlayEvent(
+                timeSeconds: 0,
+                state: OverlayState(centerX: 0.09, centerY: 0.91, size: .medium, shape: .circle, isVisible: true)
+            ),
+            TimedOverlayEvent(
+                timeSeconds: 1,
+                state: OverlayState(centerX: 0.875, centerY: 0.125, size: .large, shape: .roundedSquare, isVisible: false)
+            ),
+        ])
+        XCTAssertEqual(try persistedEvents(at: url), store.events)
+    }
+
+    func testStoreCoalescesStatesThatMatchAfterClamping() throws {
+        let url = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let initial = OverlayState(centerX: 0, centerY: 0.5, size: .small, shape: .circle, isVisible: true)
+        let store = try OverlayEventStore(fileURL: url, initialState: initial)
+
+        try store.append(
+            state: OverlayState(centerX: 0.01, centerY: 0.5, size: .small, shape: .circle, isVisible: true),
+            at: 1
+        )
+
+        XCTAssertEqual(store.events, [
+            TimedOverlayEvent(
+                timeSeconds: 0,
+                state: OverlayState(centerX: 0.06, centerY: 0.5, size: .small, shape: .circle, isVisible: true)
+            ),
+        ])
+        XCTAssertEqual(try persistedEvents(at: url), store.events)
+    }
+
+    func testStoreLeavesInMemoryEventsUnchangedWhenAtomicRewriteFails() throws {
+        let directory = try temporaryDirectoryURL()
+        let url = directory.appending(path: "overlay.json")
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let initial = OverlayState.default
+        let store = try OverlayEventStore(fileURL: url, initialState: initial)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
+
+        XCTAssertThrowsError(try store.append(state: movedState, at: 1))
+
+        XCTAssertEqual(store.events, [TimedOverlayEvent(timeSeconds: 0, state: initial)])
+        XCTAssertEqual(try persistedEvents(at: url), [TimedOverlayEvent(timeSeconds: 0, state: initial)])
+    }
+
     func testStoreRejectsNegativeTimestampWithoutChangingPersistedEvents() throws {
         let url = temporaryFileURL()
         defer { try? FileManager.default.removeItem(at: url) }
@@ -75,6 +146,13 @@ final class OverlayEventStoreTests: XCTestCase {
         FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString)
             .appendingPathExtension("json")
+    }
+
+    private func temporaryDirectoryURL() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        return directory
     }
 
     private func persistedEvents(at url: URL) throws -> [TimedOverlayEvent] {

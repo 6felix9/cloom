@@ -42,23 +42,27 @@ final class RecordingWorkspace {
             failureMessage: nil
         )
         let workspace = RecordingWorkspace(directory: directory, manifest: manifest)
-        try workspace.persistManifest()
+        try workspace.persistManifest(manifest)
         return workspace
     }
 
     func markCaptureComplete() throws {
-        manifest.captureState = .captureComplete
-        manifest.failureMessage = nil
-        try persistManifest()
+        var candidateManifest = manifest
+        candidateManifest.captureState = .captureComplete
+        candidateManifest.failureMessage = nil
+        try persistManifest(candidateManifest)
+        manifest = candidateManifest
     }
 
     func markFailed(message: String) throws {
-        manifest.captureState = .failed
-        manifest.failureMessage = message
-        try persistManifest()
+        var candidateManifest = manifest
+        candidateManifest.captureState = .failed
+        candidateManifest.failureMessage = message
+        try persistManifest(candidateManifest)
+        manifest = candidateManifest
     }
 
-    private func persistManifest() throws {
+    private func persistManifest(_ manifest: RecordingManifest) throws {
         let data = try JSONEncoder().encode(manifest)
         try data.write(to: manifestURL, options: .atomic)
     }

@@ -44,6 +44,25 @@ final class RecordingWorkspaceTests: XCTestCase {
         XCTAssertEqual(try persistedManifest(at: workspace.manifestURL), workspace.manifest)
     }
 
+    func testMarkCaptureCompleteLeavesManifestUnchangedWhenAtomicRewriteFails() throws {
+        let root = temporaryDirectoryURL()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let workspace = try RecordingWorkspace.create(
+            baseDirectory: root,
+            settings: .default,
+            now: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: workspace.directory.path)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: workspace.directory.path)
+
+        XCTAssertThrowsError(try workspace.markCaptureComplete())
+
+        XCTAssertEqual(workspace.manifest.captureState, .preparing)
+        XCTAssertEqual(try persistedManifest(at: workspace.manifestURL).captureState, .preparing)
+    }
+
     private func temporaryDirectoryURL() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
