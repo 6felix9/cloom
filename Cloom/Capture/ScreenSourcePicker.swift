@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 protocol ScreenSourcePicking: AnyObject {
-    func present() async throws -> CaptureSourceSelection?
+    func present() async throws -> (any ScreenCaptureSelection)?
 }
 
 @MainActor
@@ -14,7 +14,7 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
 
     private let picker: SCContentSharingPicker
     private let observer: Observer
-    private var continuation: CheckedContinuation<CaptureSourceSelection?, Error>?
+    private var continuation: CheckedContinuation<(any ScreenCaptureSelection)?, Error>?
 
     init(picker: SCContentSharingPicker = .shared) {
         self.picker = picker
@@ -35,7 +35,7 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
         picker.remove(observer)
     }
 
-    func present() async throws -> CaptureSourceSelection? {
+    func present() async throws -> (any ScreenCaptureSelection)? {
         guard continuation == nil else {
             throw PickerError.alreadyPresenting
         }
@@ -81,7 +81,7 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
         resume(with: .failure(error))
     }
 
-    private func resume(with result: Result<CaptureSourceSelection?, Error>) {
+    private func resume(with result: Result<(any ScreenCaptureSelection)?, Error>) {
         guard let continuation else { return }
         self.continuation = nil
         continuation.resume(with: result)

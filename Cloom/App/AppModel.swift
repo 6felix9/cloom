@@ -12,6 +12,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var cameraDevices: [CaptureDeviceOption] = []
     @Published private(set) var microphoneDevices: [CaptureDeviceOption] = []
     @Published private(set) var selectedCaptureSource: (any ScreenCaptureSelection)?
+    @Published private(set) var captureSourceError: Error?
 
     let recordingCoordinator: RecordingCoordinator
 
@@ -92,10 +93,16 @@ final class AppModel: ObservableObject {
     }
 
     func selectCaptureSource() async {
+        captureSourceError = nil
+
         do {
-            selectedCaptureSource = try await sourcePicker.present()
+            guard let selection = try await sourcePicker.present() else {
+                return
+            }
+
+            selectedCaptureSource = selection
         } catch {
-            selectedCaptureSource = nil
+            captureSourceError = error
         }
     }
 

@@ -7,7 +7,7 @@ enum CaptureSourceKind: String, Codable, Sendable {
 }
 
 @MainActor
-protocol ScreenCaptureSelection: AnyObject {
+protocol ScreenCaptureSelection: AnyObject, Sendable {
     var filter: SCContentFilter { get }
     var title: String { get }
     var kind: CaptureSourceKind { get }
@@ -16,7 +16,7 @@ protocol ScreenCaptureSelection: AnyObject {
 }
 
 @MainActor
-final class CaptureSourceSelection: ScreenCaptureSelection {
+final class CaptureSourceSelection: ScreenCaptureSelection, @unchecked Sendable {
     let filter: SCContentFilter
     let title: String
     let kind: CaptureSourceKind

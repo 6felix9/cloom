@@ -153,14 +153,25 @@ struct SetupView: View {
     }
 
     private var sourceSelector: some View {
-        HStack {
-            Label(
-                model.selectedCaptureSource?.title ?? "Screen or window",
-                systemImage: "rectangle.dashed"
-            )
-            Spacer()
-            Button("Select Screen or Window") {
-                Task { await model.selectCaptureSource() }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(
+                    model.selectedCaptureSource?.title ?? "Screen or window",
+                    systemImage: "rectangle.dashed"
+                )
+                Spacer()
+                Button("Select Screen or Window") {
+                    Task { await model.selectCaptureSource() }
+                }
+            }
+
+            if let error = model.captureSourceError {
+                Label(
+                    "Unable to select a capture source: \(error.localizedDescription)",
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.caption)
+                .foregroundStyle(.red)
             }
         }
         .padding(10)
