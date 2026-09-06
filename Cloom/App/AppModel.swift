@@ -11,23 +11,27 @@ final class AppModel: ObservableObject {
     }
     @Published private(set) var cameraDevices: [CaptureDeviceOption] = []
     @Published private(set) var microphoneDevices: [CaptureDeviceOption] = []
+    @Published private(set) var selectedCaptureSource: (any ScreenCaptureSelection)?
 
     let recordingCoordinator: RecordingCoordinator
 
     private let permissionChecker: PermissionChecking
     private let settingsStore: SettingsStoring
     private let deviceDiscovery: CaptureDeviceDiscovering
+    private let sourcePicker: ScreenSourcePicking
 
     init(
         permissionChecker: PermissionChecking,
         settingsStore: SettingsStoring = UserDefaultsSettingsStore(),
         recordingCoordinator: RecordingCoordinator = RecordingCoordinator(),
-        deviceDiscovery: CaptureDeviceDiscovering = AVCaptureDeviceDiscovery()
+        deviceDiscovery: CaptureDeviceDiscovering = AVCaptureDeviceDiscovery(),
+        sourcePicker: ScreenSourcePicking = ScreenSourcePicker()
     ) {
         self.permissionChecker = permissionChecker
         self.settingsStore = settingsStore
         self.recordingCoordinator = recordingCoordinator
         self.deviceDiscovery = deviceDiscovery
+        self.sourcePicker = sourcePicker
         self.settings = settingsStore.load()
         self.permissions = Dictionary(
             uniqueKeysWithValues: CapturePermission.allCases.map { ($0, .notDetermined) }
@@ -43,6 +47,13 @@ final class AppModel: ObservableObject {
         CapturePermission.allCases.allSatisfy {
             permissions[$0] == .authorized
         }
+    }
+
+    var isReadyToRecord: Bool {
+        isReadyToConfigure &&
+            selectedCaptureSource != nil &&
+            settings.cameraDeviceID != nil &&
+            settings.microphoneDeviceID != nil
     }
 
     func refreshPermissions() async {
@@ -78,6 +89,14 @@ final class AppModel: ObservableObject {
 
     func selectMicrophone(id: String) {
         settings.microphoneDeviceID = id
+    }
+
+    func selectCaptureSource() async {
+        do {
+            selectedCaptureSource = try await sourcePicker.present()
+        } catch {
+            selectedCaptureSource = nil
+        }
     }
 
     private func fallbackDeviceID(

@@ -71,7 +71,7 @@ struct SetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader("Recording", subtitle: "Choose what Cloom should capture.")
 
-            unavailableSelector(title: "Screen or window", icon: "rectangle.dashed")
+            sourceSelector
             devicePicker(
                 title: "Camera",
                 icon: "video",
@@ -124,8 +124,8 @@ struct SetupView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
-                .disabled(true)
-                .help("Choose a screen or window before recording")
+                .disabled(!model.isReadyToRecord)
+                .help("Select a screen or window and recording devices before recording")
             }
         }
     }
@@ -152,13 +152,16 @@ struct SetupView: View {
         }
     }
 
-    private func unavailableSelector(title: String, icon: String) -> some View {
+    private var sourceSelector: some View {
         HStack {
-            Label(title, systemImage: icon)
+            Label(
+                model.selectedCaptureSource?.title ?? "Screen or window",
+                systemImage: "rectangle.dashed"
+            )
             Spacer()
-            Text("Available in capture milestone")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            Button("Select Screen or Window") {
+                Task { await model.selectCaptureSource() }
+            }
         }
         .padding(10)
         .background(.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
