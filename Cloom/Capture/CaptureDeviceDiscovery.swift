@@ -3,6 +3,7 @@ import AVFoundation
 @MainActor
 protocol CaptureDeviceDiscovering: AnyObject {
     func devices(for kind: CaptureDeviceKind) -> [CaptureDeviceOption]
+    func preferredDeviceID(for kind: CaptureDeviceKind) -> String?
 }
 
 final class AVCaptureDeviceDiscovery: CaptureDeviceDiscovering {
@@ -27,5 +28,18 @@ final class AVCaptureDeviceDiscovery: CaptureDeviceDiscovering {
             .map {
                 CaptureDeviceOption(id: $0.uniqueID, name: $0.localizedName, kind: kind)
             }
+    }
+
+    func preferredDeviceID(for kind: CaptureDeviceKind) -> String? {
+        let mediaType: AVMediaType
+
+        switch kind {
+        case .camera:
+            mediaType = .video
+        case .microphone:
+            mediaType = .audio
+        }
+
+        return AVCaptureDevice.default(for: mediaType)?.uniqueID
     }
 }

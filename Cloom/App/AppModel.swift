@@ -64,11 +64,11 @@ final class AppModel: ObservableObject {
         microphoneDevices = deviceDiscovery.devices(for: .microphone)
 
         if !cameraDevices.contains(where: { $0.id == settings.cameraDeviceID }) {
-            settings.cameraDeviceID = cameraDevices.first?.id
+            settings.cameraDeviceID = fallbackDeviceID(for: .camera, in: cameraDevices)
         }
 
         if !microphoneDevices.contains(where: { $0.id == settings.microphoneDeviceID }) {
-            settings.microphoneDeviceID = microphoneDevices.first?.id
+            settings.microphoneDeviceID = fallbackDeviceID(for: .microphone, in: microphoneDevices)
         }
     }
 
@@ -78,5 +78,17 @@ final class AppModel: ObservableObject {
 
     func selectMicrophone(id: String) {
         settings.microphoneDeviceID = id
+    }
+
+    private func fallbackDeviceID(
+        for kind: CaptureDeviceKind,
+        in devices: [CaptureDeviceOption]
+    ) -> String? {
+        if let preferredID = deviceDiscovery.preferredDeviceID(for: kind),
+           let preferredDevice = devices.first(where: { $0.id == preferredID }) {
+            return preferredDevice.id
+        }
+
+        return devices.first?.id
     }
 }
