@@ -8,7 +8,7 @@ final class MediaSampleWriterTests: XCTestCase, @unchecked Sendable {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let url = root.appending(path: "microphone.m4a")
+        let url = root.appending(path: "microphone.mov")
         let sample = try audioSample(at: 42)
         let writer = try MediaSampleWriter.audio(url: url, firstSample: sample, epoch: 42)
 

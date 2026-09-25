@@ -26,6 +26,7 @@ enum VideoCompositor {
         screenURL: URL,
         cameraURL: URL?,
         events: [TimedOverlayEvent],
+        anchor: CMTime = .zero,
         outputURL: URL,
         progress: @escaping @Sendable (Double) -> Void = { _ in }
     ) throws {
@@ -94,23 +95,15 @@ enum VideoCompositor {
 
         let context = CIContext(options: [.cacheIntermediates: false])
         let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let duration = max(screenAsset.duration.seconds, 0.001)
-        var firstScreenPTS: CMTime?
-        var firstCameraPTS: CMTime?
+        let duration = max(screenAsset.duration.seconds - anchor.seconds, 0.001)
+        let tolerance = CMTime(value: 1, timescale: 1_000)
         var nextCamera = cameraOutput?.copyNextSampleBuffer()
         var currentCamera: CVPixelBuffer?
-
-        while let screenSample = screenOutput.copyNextSampleBuffer() {
+        // Screen, camera and overlay events all share the epoch-relative source timeline; output time is
+        // source time minus the anchor. Readers emit a black placeholder for each file's leading empty edit.
+        func emit(_ screenSample: CMSampleBuffer, at sourceTime: CMTime) {
             autoreleasepool {
-                let absolutePTS = CMSampleBufferGetPresentationTimeStamp(screenSample)
-                if firstScreenPTS == nil { firstScreenPTS = absolutePTS }
-                let relativePTS = CMTimeSubtract(absolutePTS, firstScreenPTS ?? absolutePTS)
-
-                while let sample = nextCamera {
-                    let cameraPTS = CMSampleBufferGetPresentationTimeStamp(sample)
-                    if firstCameraPTS == nil { firstCameraPTS = cameraPTS }
-                    let cameraRelative = CMTimeSubtract(cameraPTS, firstCameraPTS ?? cameraPTS)
-                    if cameraRelative > relativePTS { break }
+                while let sample = nextCamera, CMSampleBufferGetPresentationTimeStamp(sample) <= sourceTime {
                     currentCamera = CMSampleBufferGetImageBuffer(sample)
                     nextCamera = cameraOutput?.copyNextSampleBuffer()
                 }
@@ -120,8 +113,8 @@ enum VideoCompositor {
                 var destination: CVPixelBuffer?
                 guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &destination) == kCVReturnSuccess,
                       let destination else { return }
-                let seconds = max(relativePTS.seconds, 0)
-                let state = interpolatedState(at: seconds, events: events)
+                let outputTime = CMTimeMaximum(CMTimeSubtract(sourceTime, anchor), .zero)
+                let state = interpolatedState(at: sourceTime.seconds, events: events)
                 var image = aspectFit(CIImage(cvPixelBuffer: screenBuffer), in: outputSize)
                 if state.isVisible, let currentCamera {
                     image = cameraOverlay(CIImage(cvPixelBuffer: currentCamera), state: state)
@@ -136,12 +129,34 @@ enum VideoCompositor {
                 while !input.isReadyForMoreMediaData {
                     Thread.sleep(forTimeInterval: 0.001)
                 }
-                if !adaptor.append(destination, withPresentationTime: relativePTS) {
+                if !adaptor.append(destination, withPresentationTime: outputTime) {
                     return
                 }
-                progress(min(seconds / duration, 1))
+                progress(min(outputTime.seconds / duration, 1))
             }
+        }
+
+        // Screen frames arrive only when content changes, so the frame showing at the anchor may predate it.
+        var heldScreen: CMSampleBuffer?
+        var reachedAnchor = false
+        while let screenSample = screenOutput.copyNextSampleBuffer() {
+            let sourceTime = CMSampleBufferGetPresentationTimeStamp(screenSample)
+            if !reachedAnchor {
+                if CMTimeAdd(sourceTime, tolerance) < anchor {
+                    heldScreen = screenSample
+                    continue
+                }
+                reachedAnchor = true
+                if let heldScreen, sourceTime > CMTimeAdd(anchor, tolerance) {
+                    emit(heldScreen, at: anchor)
+                }
+                heldScreen = nil
+            }
+            emit(screenSample, at: sourceTime)
             if writer.status == .failed { break }
+        }
+        if let heldScreen {
+            emit(heldScreen, at: anchor)
         }
         input.markAsFinished()
         let semaphore = DispatchSemaphore(value: 0)

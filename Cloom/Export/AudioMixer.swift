@@ -29,6 +29,7 @@ enum AudioMixer {
         systemAudioURL: URL,
         includeSystemAudio: Bool,
         muteIntervals: [MuteInterval] = [],
+        anchor: CMTime = .zero,
         outputURL: URL
     ) async throws {
         guard FileManager.default.fileExists(atPath: videoURL.path) else {
@@ -60,15 +61,10 @@ enum AudioMixer {
                 withMediaType: .audio,
                 preferredTrackID: kCMPersistentTrackID_Invalid
                ) {
-                let micTimeRange = try await sourceMic.load(.timeRange)
-                let range = CMTimeRange(
-                    start: micTimeRange.start,
-                    duration: min(micTimeRange.duration, duration)
-                )
-                try targetMic.insertTimeRange(range, of: sourceMic, at: .zero)
+                try await insert(sourceMic, into: targetMic, anchor: anchor, duration: duration)
                 let parameters = AVMutableAudioMixInputParameters(track: targetMic)
                 parameters.setVolume(baseVolume, at: .zero)
-                for interval in muteIntervals {
+                for interval in rebased(muteIntervals, anchor: anchor.seconds) {
                     let start = CMTime(seconds: interval.startSeconds, preferredTimescale: 600)
                     let end = CMTime(seconds: interval.endSeconds, preferredTimescale: 600)
                     parameters.setVolume(0.0, at: start)
@@ -86,12 +82,7 @@ enum AudioMixer {
                 withMediaType: .audio,
                 preferredTrackID: kCMPersistentTrackID_Invalid
                ) {
-                let sysTimeRange = try await sourceSys.load(.timeRange)
-                let range = CMTimeRange(
-                    start: sysTimeRange.start,
-                    duration: min(sysTimeRange.duration, duration)
-                )
-                try targetSys.insertTimeRange(range, of: sourceSys, at: .zero)
+                try await insert(sourceSys, into: targetSys, anchor: anchor, duration: duration)
                 let parameters = AVMutableAudioMixInputParameters(track: targetSys)
                 parameters.setVolume(baseVolume, at: .zero)
                 audioParameters.append(parameters)
@@ -114,5 +105,25 @@ enum AudioMixer {
         } catch {
             throw AudioMixerError.exportFailed(error.localizedDescription)
         }
+    }
+
+    /// Mute intervals are recorded relative to the capture epoch; the output starts at the anchor.
+    static func rebased(_ intervals: [MuteInterval], anchor: Double) -> [MuteInterval] {
+        intervals.compactMap { interval in
+            let end = interval.endSeconds - anchor
+            guard end > 0 else { return nil }
+            return MuteInterval(startSeconds: max(interval.startSeconds - anchor, 0), endSeconds: end)
+        }
+    }
+
+    // Source audio is epoch-relative; place the part from the anchor onward so it lines up with the video.
+    private static func insert(_ source: AVAssetTrack, into target: AVMutableCompositionTrack,
+                               anchor: CMTime, duration: CMTime) async throws {
+        let sourceRange = try await source.load(.timeRange)
+        let start = CMTimeMaximum(anchor, sourceRange.start)
+        let end = CMTimeMinimum(sourceRange.end, CMTimeAdd(anchor, duration))
+        guard end > start else { return }
+        try target.insertTimeRange(CMTimeRange(start: start, end: end), of: source,
+                                   at: CMTimeSubtract(start, anchor))
     }
 }

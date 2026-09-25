@@ -96,6 +96,42 @@ final class RecordingExporterTests: XCTestCase, @unchecked Sendable {
         XCTAssertEqual(audioTracks.count, 0)
     }
 
+    func testExportStartsOnRealContentWithAudioAlignedWhenStreamsWarmUpAtDifferentTimes() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var settings = RecordingSettings.default
+        settings.includeCamera = true
+        settings.includeMicrophone = true
+        settings.includeSystemAudio = false
+        let workspace = try RecordingWorkspace.create(baseDirectory: root, settings: settings)
+        // Epoch 100; camera, screen and microphone come online at +0.1, +0.2 and +0.4 seconds.
+        // The screen changes from gray 200 to 120 exactly when the microphone starts.
+        try await MediaFixtures.writeVideo(to: workspace.cameraURL, epoch: 100,
+                                           frames: (1...8).map { (100 + Double($0) / 10, 250) })
+        try await MediaFixtures.writeVideo(to: workspace.screenURL, epoch: 100,
+                                           frames: (2...8).map { (100 + Double($0) / 10, $0 < 4 ? 200 : 120) })
+        try await MediaFixtures.writeAudio(to: workspace.microphoneURL, epoch: 100,
+                                           start: 100.4, duration: 0.5, amplitude: 8_000)
+
+        let output = try await RecordingExporter(
+            outputDirectory: root.appending(path: "Movies", directoryHint: .isDirectory)
+        ).export(workspace: workspace) { _ in }
+
+        let frames = try await MediaFixtures.decodedFrames(of: output)
+        let first = try XCTUnwrap(frames.first)
+        XCTAssertEqual(first.seconds, 0, accuracy: 0.001)
+        XCTAssertEqual(first.gray(), 120, accuracy: 25, "Export must open on content captured with the microphone")
+        let audible = try await MediaFixtures.firstAudibleSeconds(of: output)
+        XCTAssertEqual(try XCTUnwrap(audible), first.seconds, accuracy: 0.034)
+        let asset = AVURLAsset(url: output)
+        let videoTracks = try await asset.loadTracks(withMediaType: .video)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        let videoRange = try await XCTUnwrap(videoTracks.first).load(.timeRange)
+        let audioRange = try await XCTUnwrap(audioTracks.first).load(.timeRange)
+        XCTAssertEqual(audioRange.end.seconds, videoRange.end.seconds, accuracy: 0.034)
+    }
+
     private func audioSample(at seconds: Double) throws -> CMSampleBuffer {
         var description = AudioStreamBasicDescription(
             mSampleRate: 48_000, mFormatID: kAudioFormatLinearPCM,

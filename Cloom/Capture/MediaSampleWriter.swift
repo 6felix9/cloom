@@ -64,7 +64,8 @@ final class MediaSampleWriter: @unchecked Sendable {
               description.mSampleRate > 0, description.mChannelsPerFrame > 0 else {
             throw MediaSampleWriterError.invalidFormat
         }
-        return try MediaSampleWriter(url: url, fileType: .m4a, mediaType: .audio, settings: [
+        // QuickTime keeps the leading empty edit before a late first sample; M4A drops it and loses sync.
+        return try MediaSampleWriter(url: url, fileType: .mov, mediaType: .audio, settings: [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
             AVSampleRateKey: description.mSampleRate,
             AVNumberOfChannelsKey: description.mChannelsPerFrame,
