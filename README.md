@@ -35,13 +35,16 @@ open Cloom.xcodeproj
 Select your development team under **Signing & Capabilities** (required by macOS to remember privacy permissions across launches), select **My Mac** as the destination, and press **Cmd + R** to run.
 
 ### 2. Or Run from Command Line
+Set your development team first (step 1), then:
 ```bash
-# Build the application
-xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+# Build the application (signed with your development team)
+xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=macOS' -derivedDataPath build
 
 # Launch the built app
 open build/Build/Products/Debug/Cloom.app
 ```
+
+> **Note:** Don't pass `CODE_SIGNING_ALLOWED=NO` when building an app you intend to run. Unsigned builds get a new ad-hoc signature every time, so macOS forgets Screen Recording, Camera, and Microphone permissions after each rebuild.
 
 ---
 

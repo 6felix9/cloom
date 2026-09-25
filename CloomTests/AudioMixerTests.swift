@@ -10,7 +10,7 @@ final class AudioMixerTests: XCTestCase, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: root) }
 
         let videoURL = root.appending(path: "video.mov")
-        let micURL = root.appending(path: "mic.m4a")
+        let micURL = root.appending(path: "mic.mov")
         let outputURL = root.appending(path: "output.mp4")
 
         let videoWriter = try MediaSampleWriter.video(url: videoURL, width: 320, height: 240, epoch: 10)
@@ -46,8 +46,8 @@ final class AudioMixerTests: XCTestCase, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: root) }
 
         let videoURL = root.appending(path: "video.mov")
-        let micURL = root.appending(path: "mic.m4a")
-        let sysURL = root.appending(path: "sys.m4a")
+        let micURL = root.appending(path: "mic.mov")
+        let sysURL = root.appending(path: "sys.mov")
         let outputURL = root.appending(path: "output.mp4")
 
         let videoWriter = try MediaSampleWriter.video(url: videoURL, width: 320, height: 240, epoch: 10)
@@ -136,7 +136,7 @@ final class AudioMixerTests: XCTestCase, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: root) }
         let videoURL = root.appending(path: "video.mov")
         let missingMicrophoneURL = root.appending(path: "missing-mic.m4a")
-        let systemAudioURL = root.appending(path: "system.m4a")
+        let systemAudioURL = root.appending(path: "system.mov")
         let outputURL = root.appending(path: "output.mp4")
         let videoWriter = try MediaSampleWriter.video(url: videoURL, width: 320, height: 240, epoch: 10)
         try videoWriter.append(videoSample(at: 10))
@@ -164,6 +164,67 @@ final class AudioMixerTests: XCTestCase, @unchecked Sendable {
         let audioTracks = try await asset.loadTracks(withMediaType: .audio)
         XCTAssertEqual(videoTracks.count, 1)
         XCTAssertEqual(audioTracks.count, 1)
+    }
+
+    func testAnchorAlignsMicrophoneStartWithVideoStart() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let videoURL = root.appending(path: "video.mov")
+        let micURL = root.appending(path: "mic.mov")
+        let outputURL = root.appending(path: "output.mp4")
+        try await MediaFixtures.writeVideo(to: videoURL, epoch: 0,
+                                           frames: (0...9).map { (Double($0) / 30, 200) })
+        try await MediaFixtures.writeAudio(to: micURL, epoch: 10, start: 10.2, duration: 0.5, amplitude: 8_000)
+
+        try await AudioMixer.mux(
+            videoURL: videoURL,
+            microphoneURL: micURL,
+            systemAudioURL: root.appending(path: "absent.mov"),
+            includeSystemAudio: false,
+            anchor: CMTime(seconds: 0.2, preferredTimescale: 600),
+            outputURL: outputURL
+        )
+
+        let audible = try await MediaFixtures.firstAudibleSeconds(of: outputURL)
+        XCTAssertEqual(try XCTUnwrap(audible), 0, accuracy: 0.034)
+    }
+
+    func testSystemAudioStartingAfterAnchorKeepsItsOffset() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let videoURL = root.appending(path: "video.mov")
+        let systemURL = root.appending(path: "system.mov")
+        let outputURL = root.appending(path: "output.mp4")
+        try await MediaFixtures.writeVideo(to: videoURL, epoch: 0,
+                                           frames: (0...14).map { (Double($0) / 30, 200) })
+        try await MediaFixtures.writeAudio(to: systemURL, epoch: 10, start: 10.4, duration: 0.4, amplitude: 8_000)
+
+        try await AudioMixer.mux(
+            videoURL: videoURL,
+            microphoneURL: root.appending(path: "absent.mov"),
+            systemAudioURL: systemURL,
+            includeSystemAudio: true,
+            anchor: CMTime(seconds: 0.2, preferredTimescale: 600),
+            outputURL: outputURL
+        )
+
+        let audible = try await MediaFixtures.firstAudibleSeconds(of: outputURL)
+        XCTAssertEqual(try XCTUnwrap(audible), 0.2, accuracy: 0.034)
+    }
+
+    func testMuteIntervalsAreRebasedToAnchor() {
+        let intervals = [
+            MuteInterval(startSeconds: 0, endSeconds: 0.5),
+            MuteInterval(startSeconds: 1, endSeconds: 2),
+            MuteInterval(startSeconds: 3, endSeconds: 4)
+        ]
+
+        XCTAssertEqual(AudioMixer.rebased(intervals, anchor: 1.5), [
+            MuteInterval(startSeconds: 0, endSeconds: 0.5),
+            MuteInterval(startSeconds: 1.5, endSeconds: 2.5)
+        ])
     }
 
     private func audioSample(at seconds: Double) throws -> CMSampleBuffer {

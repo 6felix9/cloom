@@ -24,8 +24,8 @@ final class RecordingWorkspaceTests: XCTestCase {
         XCTAssertEqual(workspace.overlayURL.lastPathComponent, "overlay.json")
         XCTAssertEqual(workspace.screenURL.lastPathComponent, "screen.mov")
         XCTAssertEqual(workspace.cameraURL.lastPathComponent, "camera.mov")
-        XCTAssertEqual(workspace.microphoneURL.lastPathComponent, "microphone.m4a")
-        XCTAssertEqual(workspace.systemAudioURL.lastPathComponent, "system-audio.m4a")
+        XCTAssertEqual(workspace.microphoneURL.lastPathComponent, "microphone.mov")
+        XCTAssertEqual(workspace.systemAudioURL.lastPathComponent, "system-audio.mov")
         XCTAssertEqual(try persistedManifest(at: workspace.manifestURL), workspace.manifest)
     }
 

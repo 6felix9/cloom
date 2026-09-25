@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 protocol RecordingExporting: Sendable {
     func export(
@@ -18,6 +19,7 @@ extension RecordingExporting {
 }
 
 struct RecordingExporter: RecordingExporting {
+    private static let logger = Logger(subsystem: "com.tzefoong.Cloom", category: "Export")
     private let outputDirectory: URL?
 
     init(outputDirectory: URL? = nil) {
@@ -59,11 +61,25 @@ struct RecordingExporter: RecordingExporting {
             events = [TimedOverlayEvent(timeSeconds: 0, state: .default)]
         }
 
+        let timeline = try await RecordingTimeline.resolve(
+            screenURL: workspace.screenURL,
+            cameraURL: Self.cameraURL(for: workspace),
+            microphoneURL: workspace.manifest.settings.includeMicrophone ? workspace.microphoneURL : nil
+        )
+        let anchor = timeline.anchor
+        Self.logger.info("""
+            Export anchor \(anchor.seconds, privacy: .public)s: \
+            screen \(timeline.screenStart.seconds, privacy: .public)s, \
+            camera \(timeline.cameraStart?.seconds ?? -1, privacy: .public)s, \
+            microphone \(timeline.microphoneStart?.seconds ?? -1, privacy: .public)s
+            """)
+
         try await Task.detached(priority: .userInitiated) {
             try VideoCompositor.render(
                 screenURL: workspace.screenURL,
                 cameraURL: Self.cameraURL(for: workspace),
                 events: events,
+                anchor: anchor,
                 outputURL: renderedVideoURL
             ) { fraction in
                 progress(fraction * 0.9)
@@ -77,6 +93,7 @@ struct RecordingExporter: RecordingExporting {
                 systemAudioURL: workspace.systemAudioURL,
                 includeSystemAudio: workspace.manifest.settings.includeSystemAudio,
                 muteIntervals: muteIntervals,
+                anchor: anchor,
                 outputURL: finalOutputURL
             )
             progress(1.0)

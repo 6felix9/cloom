@@ -19,8 +19,8 @@ final class RecordingWorkspace: @unchecked Sendable {
         overlayURL = directory.appending(path: "overlay.json")
         screenURL = directory.appending(path: "screen.mov")
         cameraURL = directory.appending(path: "camera.mov")
-        microphoneURL = directory.appending(path: "microphone.m4a")
-        systemAudioURL = directory.appending(path: "system-audio.m4a")
+        microphoneURL = directory.appending(path: "microphone.mov")
+        systemAudioURL = directory.appending(path: "system-audio.mov")
         manifestURL = directory.appending(path: "manifest.json")
         self._manifest = manifest
     }

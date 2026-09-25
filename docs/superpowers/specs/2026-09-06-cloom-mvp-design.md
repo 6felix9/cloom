@@ -154,8 +154,8 @@ Each recording receives a recoverable workspace at `~/Library/Application Suppor
 ```text
 screen.mov
 camera.mov
-microphone.m4a
-system-audio.m4a    # only when enabled and available
+microphone.mov
+system-audio.mov    # only when enabled and available
 overlay.json
 manifest.json
 ```
