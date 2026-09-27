@@ -37,9 +37,14 @@ final class CameraBubblePanelController: NSObject {
     private var state = OverlayState.default
     private var onStateChange: ((OverlayState) -> Void)?
     private var moveObserver: NSObjectProtocol?
+    private var trackingTask: Task<Void, Never>?
     private var applyingFrame = false
 
+    var panelFrame: CGRect? { panel?.frame }
+
+    /// `frameProvider` is polled while visible so the bubble follows a captured window that moves or resizes.
     func show(session: AVCaptureSession, state: OverlayState, captureFrame: CGRect,
+              frameProvider: (@MainActor () -> CGRect?)? = nil,
               onStateChange: @escaping (OverlayState) -> Void) {
         close()
         self.captureFrame = captureFrame
@@ -64,6 +69,26 @@ final class CameraBubblePanelController: NSObject {
             MainActor.assumeIsolated { self?.panelDidMove() }
         }
         panel.orderFrontRegardless()
+        if let frameProvider {
+            trackingTask = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard !Task.isCancelled else { return }
+                    self?.followCaptureFrame(frameProvider())
+                }
+            }
+        }
+    }
+
+    /// Moves the bubble with the captured content, keeping its normalized placement.
+    func followCaptureFrame(_ frame: CGRect?) {
+        guard let frame, !frame.isEmpty, frame != captureFrame else { return }
+        captureFrame = frame
+        guard let panel else { return }
+        applyingFrame = true
+        panel.setFrame(CameraBubbleGeometry.frame(state: state, in: frame), display: true)
+        applyingFrame = false
+        applyAppearance()
     }
 
     func update(state: OverlayState) {
@@ -76,6 +101,8 @@ final class CameraBubblePanelController: NSObject {
     }
 
     func close() {
+        trackingTask?.cancel()
+        trackingTask = nil
         if let moveObserver { NotificationCenter.default.removeObserver(moveObserver) }
         moveObserver = nil
         panel?.orderOut(nil)

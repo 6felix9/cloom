@@ -176,8 +176,12 @@ final class AppModel: ObservableObject {
                 LiveCaptureGeometry.logger.info(
                     "Bubble frame \(String(describing: captureFrame), privacy: .public) (\(liveFrame == nil ? "pick-time fallback" : "live", privacy: .public))"
                 )
+                var frameProvider: (@MainActor () -> CGRect?)?
+                if case .window = source.target {
+                    frameProvider = { LiveCaptureGeometry.liveFrame(for: source) }
+                }
                 bubblePanel.show(session: sessionController.previewSession, state: overlayState,
-                                 captureFrame: captureFrame) { [weak self] state in
+                                 captureFrame: captureFrame, frameProvider: frameProvider) { [weak self] state in
                     self?.applyOverlay(state)
                 }
             }
