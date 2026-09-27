@@ -28,6 +28,30 @@ final class RecordingSessionControllerTests: XCTestCase {
         XCTAssertTrue(fixture.controller.workspace === fixture.factory.workspace)
     }
 
+    func testScreenStreamIsSizedToCapturedContent() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeWorkspace() }
+
+        try await fixture.controller.start(configuration: RecordingSessionConfiguration(
+            source: SessionTestScreenSelection(),
+            settings: .fixture,
+            contentSize: CGSize(width: 800, height: 1200)
+        ))
+
+        XCTAssertEqual(fixture.screen.configuration?.width, 720)
+        XCTAssertEqual(fixture.screen.configuration?.height, 1080)
+    }
+
+    func testScreenStreamFallsBackToSourceContentRectSize() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeWorkspace() }
+
+        try await fixture.controller.start(configuration: .fixture)
+
+        XCTAssertEqual(fixture.screen.configuration?.width, 1920)
+        XCTAssertEqual(fixture.screen.configuration?.height, 1080)
+    }
+
     func testCountdownTicksThreeTwoOneBeforeStartingCapture() async throws {
         let sleeper = ControlledCountdownSleeper()
         let fixture = try Fixture(sleeper: sleeper)
