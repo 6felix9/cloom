@@ -69,18 +69,39 @@ final class ScreenSourcePicker: NSObject, ScreenSourcePicking {
         }
 
         let contentRect = filter.contentRect
+        let target = Self.target(of: filter, kind: kind)
+        let screenFrames = NSScreen.screens.map(\.frame)
+        LiveCaptureGeometry.logger.info(
+            "Picked \(kind.rawValue, privacy: .public): target \(String(describing: target), privacy: .public), contentRect \(String(describing: contentRect), privacy: .public), included \(Self.includedFrames(of: filter), privacy: .public), screens \(String(describing: screenFrames), privacy: .public)"
+        )
         let selection = CaptureSourceSelection(
             filter: filter,
             title: title,
             kind: kind,
             contentRect: contentRect,
-            presentationFrame: CaptureDisplayFrameResolver.resolve(
+            target: target,
+            presentationFrame: CaptureFrameResolver.resolve(
                 contentRect: contentRect,
-                screenFrames: NSScreen.screens.map(\.frame)
+                screenFrames: screenFrames
             ),
             pointPixelScale: CGFloat(filter.pointPixelScale)
         )
         resume(with: .success(selection))
+    }
+
+    private static func target(of filter: SCContentFilter, kind: CaptureSourceKind) -> CaptureTarget? {
+        guard #available(macOS 15.2, *) else { return nil }
+        switch kind {
+        case .display: return filter.includedDisplays.first.map { .display($0.displayID) }
+        case .window: return filter.includedWindows.first.map { .window($0.windowID) }
+        }
+    }
+
+    private static func includedFrames(of filter: SCContentFilter) -> String {
+        guard #available(macOS 15.2, *) else { return "unavailable" }
+        let displays = filter.includedDisplays.map { "display \($0.displayID) \($0.frame)" }
+        let windows = filter.includedWindows.map { "window \($0.windowID) \($0.frame)" }
+        return String(describing: displays + windows)
     }
 
     private func didFailToStart(with error: Error) {
