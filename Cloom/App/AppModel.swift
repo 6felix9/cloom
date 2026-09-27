@@ -170,8 +170,14 @@ final class AppModel: ObservableObject {
                 activeMuteStartSeconds = 0.0
             }
             if recordingSettings.includeCamera {
+                // Resolved after the countdown inside start(), since the window may have moved since it was picked.
+                let liveFrame = LiveCaptureGeometry.liveFrame(for: source)
+                let captureFrame = liveFrame ?? source.presentationFrame
+                LiveCaptureGeometry.logger.info(
+                    "Bubble frame \(String(describing: captureFrame), privacy: .public) (\(liveFrame == nil ? "pick-time fallback" : "live", privacy: .public))"
+                )
                 bubblePanel.show(session: sessionController.previewSession, state: overlayState,
-                                 captureFrame: source.presentationFrame) { [weak self] state in
+                                 captureFrame: captureFrame) { [weak self] state in
                     self?.applyOverlay(state)
                 }
             }
