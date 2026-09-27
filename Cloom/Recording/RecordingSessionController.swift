@@ -26,11 +26,11 @@ struct HostRecordingClock: RecordingClock {
 }
 
 protocol CountdownSleeping: Sendable {
-    func sleepForCountdown() async throws
+    func sleepForCountdownTick() async throws
 }
 
-struct ThreeSecondCountdownSleeper: CountdownSleeping {
-    func sleepForCountdown() async throws { try await Task.sleep(for: .seconds(3)) }
+struct OneSecondCountdownSleeper: CountdownSleeping {
+    func sleepForCountdownTick() async throws { try await Task.sleep(for: .seconds(1)) }
 }
 
 @MainActor
@@ -75,6 +75,8 @@ enum RecordingSessionError: Error, LocalizedError {
 
 @MainActor
 final class RecordingSessionController {
+    static let countdownSeconds = 3
+
     private let coordinator: RecordingCoordinator
     private let screenCapture: any ScreenCapturing
     private let cameraCapture: any CameraCapturing
@@ -93,7 +95,7 @@ final class RecordingSessionController {
          cameraCapture: any CameraCapturing = CameraCaptureService(),
          workspaceFactory: any RecordingWorkspaceCreating = RecordingWorkspaceFactory(),
          clock: any RecordingClock = HostRecordingClock(),
-         countdownSleeper: any CountdownSleeping = ThreeSecondCountdownSleeper()) {
+         countdownSleeper: any CountdownSleeping = OneSecondCountdownSleeper()) {
         self.coordinator = coordinator
         self.screenCapture = screenCapture
         self.cameraCapture = cameraCapture
@@ -129,9 +131,12 @@ final class RecordingSessionController {
                configuration.settings.microphoneDeviceID?.isEmpty != false {
                 throw RecordingSessionError.missingMicrophone
             }
-            try coordinator.beginCountdown()
-            try await countdownSleeper.sleepForCountdown()
-            try Task.checkCancellation()
+            try coordinator.beginCountdown(seconds: Self.countdownSeconds)
+            for tick in 1...Self.countdownSeconds {
+                try await countdownSleeper.sleepForCountdownTick()
+                try Task.checkCancellation()
+                if tick < Self.countdownSeconds { try coordinator.tickCountdown() }
+            }
             let epoch = clock.nowSeconds()
             guard epoch.isFinite, epoch >= 0 else { throw RecordingSessionError.invalidEpoch }
             self.epoch = epoch

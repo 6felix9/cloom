@@ -226,7 +226,7 @@ private struct FixedClock: RecordingClock {
 }
 
 private struct ImmediateSleeper: CountdownSleeping {
-    func sleepForCountdown() async throws {}
+    func sleepForCountdownTick() async throws {}
 }
 
 @MainActor

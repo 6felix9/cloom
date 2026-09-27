@@ -9,7 +9,7 @@ enum RecordingFailure: Error, Equatable, Sendable {
 enum RecordingPhase: Equatable, Sendable {
     case idle
     case preparing
-    case countdown
+    case countdown(remaining: Int)
     case recording
     case stopping
     case exporting(progress: Double)

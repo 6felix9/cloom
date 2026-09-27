@@ -17,10 +17,19 @@ struct RecordingControlsView: View {
 
     var body: some View {
         VStack(spacing: 22) {
-            Image(systemName: "record.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.red)
-            Text(timeText).font(.system(.largeTitle, design: .monospaced).bold())
+            if case let .countdown(remaining) = model.recordingCoordinator.phase {
+                Text("\(remaining)")
+                    .font(.system(size: 96, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.default, value: remaining)
+                    .accessibilityLabel("Recording starts in \(remaining)")
+            } else {
+                Image(systemName: "record.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.red)
+                Text(timeText).font(.system(.largeTitle, design: .monospaced).bold())
+            }
             RecordingStatusView(coordinator: model.recordingCoordinator)
 
             controls
