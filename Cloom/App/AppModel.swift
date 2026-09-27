@@ -164,7 +164,8 @@ final class AppModel: ObservableObject {
         do {
             try await sessionController.start(configuration: RecordingSessionConfiguration(
                 source: source,
-                settings: recordingSettings
+                settings: recordingSettings,
+                contentSize: LiveCaptureGeometry.liveFrame(for: source)?.size
             ))
             if recordingSettings.includeMicrophone, isMicrophoneMuted {
                 activeMuteStartSeconds = 0.0

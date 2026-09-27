@@ -55,6 +55,14 @@ struct RecordingWorkspaceFactory: RecordingWorkspaceCreating {
 struct RecordingSessionConfiguration {
     let source: any ScreenCaptureSelection
     let settings: RecordingSettings
+    /// Size of the captured display or window in points; sets the raw screen track's aspect ratio.
+    let contentSize: CGSize
+
+    init(source: any ScreenCaptureSelection, settings: RecordingSettings, contentSize: CGSize? = nil) {
+        self.source = source
+        self.settings = settings
+        self.contentSize = contentSize ?? source.contentRect.size
+    }
 }
 
 enum RecordingSessionError: Error, LocalizedError {
@@ -136,6 +144,7 @@ final class RecordingSessionController {
             guard epoch.isFinite, epoch >= 0 else { throw RecordingSessionError.invalidEpoch }
             self.epoch = epoch
             let streamConfiguration = ScreenStreamConfigurationFactory.make(
+                contentSize: configuration.contentSize,
                 includeSystemAudio: configuration.settings.includeSystemAudio,
                 includeMicrophone: configuration.settings.includeMicrophone,
                 microphoneDeviceID: configuration.settings.microphoneDeviceID
