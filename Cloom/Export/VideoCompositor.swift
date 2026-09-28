@@ -115,9 +115,11 @@ enum VideoCompositor {
                       let destination else { return }
                 let outputTime = CMTimeMaximum(CMTimeSubtract(sourceTime, anchor), .zero)
                 let state = interpolatedState(at: sourceTime.seconds, events: events)
-                var image = aspectFit(CIImage(cvPixelBuffer: screenBuffer), in: outputSize)
+                let screenImage = CIImage(cvPixelBuffer: screenBuffer)
+                let content = fittedRect(for: screenImage.extent, in: outputSize)
+                var image = aspectFit(screenImage, in: content)
                 if state.isVisible, let currentCamera {
-                    image = cameraOverlay(CIImage(cvPixelBuffer: currentCamera), state: state)
+                    image = cameraOverlay(CIImage(cvPixelBuffer: currentCamera), state: state, in: content)
                         .composited(over: image)
                 }
                 context.render(
@@ -167,16 +169,25 @@ enum VideoCompositor {
         }
     }
 
-    private static func aspectFit(_ image: CIImage, in size: CGSize) -> CIImage {
-        let scale = min(size.width / image.extent.width, size.height / image.extent.height)
+    /// Canvas rect the screen content is aspect-fitted into. Overlay coordinates are normalized to this rect,
+    /// matching the on-screen bubble, which is normalized to the captured display or window.
+    private static func fittedRect(for extent: CGRect, in size: CGSize) -> CGRect {
+        let scale = min(size.width / extent.width, size.height / extent.height)
+        let width = extent.width * scale
+        let height = extent.height * scale
+        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2, width: width, height: height)
+    }
+
+    private static func aspectFit(_ image: CIImage, in content: CGRect) -> CIImage {
+        let scale = content.width / image.extent.width
         let scaled = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-        let x = (size.width - scaled.extent.width) / 2 - scaled.extent.minX
-        let y = (size.height - scaled.extent.height) / 2 - scaled.extent.minY
-        let black = CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size))
+        let x = content.minX - scaled.extent.minX
+        let y = content.minY - scaled.extent.minY
+        let black = CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: outputSize))
         return scaled.transformed(by: CGAffineTransform(translationX: x, y: y)).composited(over: black)
     }
 
-    private static func cameraOverlay(_ image: CIImage, state: OverlayState) -> CIImage {
+    private static func cameraOverlay(_ image: CIImage, state: OverlayState, in content: CGRect) -> CIImage {
         let side = min(image.extent.width, image.extent.height)
         let crop = CGRect(
             x: image.extent.midX - side / 2,
@@ -187,7 +198,7 @@ enum VideoCompositor {
         var square = image.cropped(to: crop)
         square = square.transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
         square = square.transformed(by: CGAffineTransform(translationX: side, y: 0).scaledBy(x: -1, y: 1))
-        let diameter = min(outputSize.width, outputSize.height) * CGFloat(state.size.presetFraction)
+        let diameter = min(content.width, content.height) * CGFloat(state.size.presetFraction)
         square = square.transformed(by: CGAffineTransform(scaleX: diameter / side, y: diameter / side))
         let extent = CGRect(x: 0, y: 0, width: diameter, height: diameter)
         let rounded = CIFilter.roundedRectangleGenerator()
@@ -198,7 +209,8 @@ enum VideoCompositor {
             kCIInputBackgroundImageKey: CIImage.empty(),
             kCIInputMaskImageKey: rounded.outputImage!
         ])
-        let center = CGPoint(x: outputSize.width * state.centerX, y: outputSize.height * state.centerY)
+        let center = CGPoint(x: content.minX + content.width * state.centerX,
+                             y: content.minY + content.height * state.centerY)
         return masked.transformed(by: CGAffineTransform(translationX: center.x - diameter / 2,
                                                          y: center.y - diameter / 2))
     }
