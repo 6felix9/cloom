@@ -41,10 +41,12 @@ Cloom/
 │   ├── CaptureDeviceDiscovery.swift  # Enumerates cameras, microphones, and screens
 │   ├── CaptureDeviceOption.swift     # Device models and identifiers
 │   ├── CaptureSourceSelection.swift  # Selected source state model
+│   ├── CaptureFrameResolver.swift    # Resolves the captured display/window to an AppKit frame
+│   ├── LiveCaptureGeometry.swift     # Live NSScreen and window-bounds lookups for the camera bubble
 │   ├── CameraCaptureService.swift    # AVCaptureSession camera pipeline
 │   ├── ScreenCaptureService.swift    # ScreenCaptureKit display & window capture
 │   ├── ScreenSourcePicker.swift      # System display/window picker integration
-│   ├── ScreenStreamConfigurationFactory.swift # Audio mode stream configuration
+│   ├── ScreenStreamConfigurationFactory.swift # Stream size and audio mode configuration
 │   └── MediaSampleWriter.swift       # AVAssetWriter wrapper for synchronized source streams
 ├── Overlay/
 │   ├── CameraBubblePanel.swift       # Floating borderless NSPanel with edge clamping

@@ -476,7 +476,7 @@ xcodebuild build -project Cloom.xcodeproj -scheme Cloom -destination 'platform=m
 
 - [ ] **Step 2: Manual checks on a two-monitor setup**
 
-Watch the log with `log stream --predicate 'subsystem == "com.tzefoong.Cloom"'`.
+Watch the log with `log stream --level info --predicate 'subsystem == "com.tzefoong.Cloom"'`.
 
 1. Record the secondary display, with it arranged left, right, above, and below the primary. The bubble opens on it and drags to every edge and corner without snapping back.
 2. Record a window on the primary display (the second comment's repro). The bubble opens over that window and stays inside it.
@@ -504,3 +504,10 @@ Watch the log with `log stream --predicate 'subsystem == "com.tzefoong.Cloom"'`.
 ## Environment Note
 
 The machine this plan was written on has only Command Line Tools (no Xcode.app), so `xcodebuild` cannot run there. `swiftc -typecheck -swift-version 6 -target arm64-apple-macos15.0 -sdk $(xcrun --show-sdk-path) $(find Cloom -name '*.swift')` works for compile checks. Run the test steps on a machine with Xcode 26.
+
+## Implementation Notes
+
+- Tasks 1–5 are implemented as one commit each on `fix/camera-bubble-placement-issue-1`.
+- `CameraBubblePanelControllerTests` uses a capture frame that produces an integral bubble frame, because AppKit rounds the panel's initial frame to whole points (687.5 → 687).
+- Task 5's fallback also adds a recording warning to `AppModel.warnings`, through `ScreenCaptureService.warn`, so a failed exclusion is visible rather than silent.
+- **Verification so far:** Xcode was unavailable, so the whole `CloomTests` suite ran through a throwaway XCTest stand-in built with Command Line Tools. It passed on unchanged `main` (95/95) and on this branch. It is not a substitute for `xcodebuild test`, the app build, or the Task 6 manual hardware checks, all of which are still pending.
