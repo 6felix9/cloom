@@ -8,10 +8,13 @@ enum OverlayEventStoreError: Error, Equatable {
 final class OverlayEventStore {
     let fileURL: URL
     private(set) var events: [TimedOverlayEvent]
+    /// Width ÷ height of the captured content the overlay is normalized to.
+    let aspectRatio: Double
 
-    init(fileURL: URL, initialState: OverlayState) throws {
+    init(fileURL: URL, initialState: OverlayState, aspectRatio: Double = 1) throws {
         self.fileURL = fileURL
-        events = [TimedOverlayEvent(timeSeconds: 0, state: initialState.clamped())]
+        self.aspectRatio = aspectRatio
+        events = [TimedOverlayEvent(timeSeconds: 0, state: initialState.clamped(aspectRatio: aspectRatio))]
         try persist(events)
     }
 
@@ -22,7 +25,7 @@ final class OverlayEventStore {
         guard let latestEvent = events.last, timeSeconds >= latestEvent.timeSeconds else {
             throw OverlayEventStoreError.nonMonotonicTimestamp
         }
-        let clampedState = state.clamped()
+        let clampedState = state.clamped(aspectRatio: aspectRatio)
         guard latestEvent.state != clampedState else {
             return
         }

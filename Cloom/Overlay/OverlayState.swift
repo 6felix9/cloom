@@ -15,11 +15,16 @@ struct OverlayState: Codable, Equatable, Sendable {
         isVisible: true
     )
 
-    func clamped() -> OverlayState {
-        let inset = size.presetFraction / 2
+    /// Keeps the whole bubble inside a frame of the given width ÷ height. The bubble's diameter is a fraction of the
+    /// frame's short edge, so along the long edge it spans a smaller normalized share and can sit closer to that edge.
+    func clamped(aspectRatio: Double = 1) -> OverlayState {
+        let aspectRatio = aspectRatio.isFinite && aspectRatio > 0 ? aspectRatio : 1
+        let halfFraction = size.presetFraction / 2
+        let insetX = halfFraction * min(1, 1 / aspectRatio)
+        let insetY = halfFraction * min(1, aspectRatio)
         return OverlayState(
-            centerX: min(max(centerX, inset), 1 - inset),
-            centerY: min(max(centerY, inset), 1 - inset),
+            centerX: min(max(centerX, insetX), 1 - insetX),
+            centerY: min(max(centerY, insetY), 1 - insetY),
             size: size,
             shape: shape,
             isVisible: isVisible

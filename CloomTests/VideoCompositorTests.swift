@@ -151,7 +151,8 @@ final class VideoCompositorTests: XCTestCase, @unchecked Sendable {
         let cameraURL = root.appending(path: "camera.mov")
         let outputURL = root.appending(path: "rendered.mov")
         try await MediaFixtures.writeVideo(to: screenURL, epoch: 50,
-                                           frames: (1...6).map { (50 + Double($0) / 10, 100) })
+                                           frames: (1...6).map { (50 + Double($0) / 10, 100) },
+                                           width: 320, height: 180)
         // Camera turns dark at +0.5 s; the overlay is hidden from +0.55 s (both epoch-relative).
         try await MediaFixtures.writeVideo(to: cameraURL, epoch: 50,
                                            frames: [(50.3, 250), (50.4, 250), (50.5, 20)])
@@ -180,6 +181,35 @@ final class VideoCompositorTests: XCTestCase, @unchecked Sendable {
         XCTAssertEqual(bubble(frames[1]), 250, accuracy: 25)
         XCTAssertEqual(bubble(frames[2]), 20, accuracy: 25)
         XCTAssertEqual(bubble(frames[3]), 100, accuracy: 25, "Overlay hides at epoch +0.55 s")
+    }
+
+    func testCameraOverlayIsPlacedWithinPillarboxedScreenContent() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let screenURL = root.appending(path: "screen.mov")
+        let cameraURL = root.appending(path: "camera.mov")
+        let outputURL = root.appending(path: "rendered.mov")
+        // A 4:3 screen fits the canvas as 1440×1080 content starting at x = 240.
+        try await MediaFixtures.writeVideo(to: screenURL, epoch: 50, frames: [(50.1, 100), (50.2, 100), (50.3, 100)])
+        try await MediaFixtures.writeVideo(to: cameraURL, epoch: 50, frames: [(50.1, 250), (50.2, 250), (50.3, 250)])
+
+        try VideoCompositor.render(
+            screenURL: screenURL,
+            cameraURL: cameraURL,
+            events: [TimedOverlayEvent(timeSeconds: 0, state: .default)],
+            anchor: CMTime(seconds: 0.1, preferredTimescale: 600),
+            outputURL: outputURL
+        )
+
+        let frames = try await MediaFixtures.decodedFrames(of: outputURL)
+        let frame = try XCTUnwrap(frames.last)
+        let state = OverlayState.default
+        let contentX = (240 + state.centerX * 1440) / 1920
+        XCTAssertEqual(frame.gray(atX: contentX, y: state.centerY), 250, accuracy: 25)
+        XCTAssertEqual(frame.gray(atX: state.centerX, y: state.centerY), 100, accuracy: 25,
+                       "The canvas-relative position is screen content, not the bubble")
+        XCTAssertLessThan(frame.gray(atX: 0.05, y: 0.5), 20, "Pillarbox stays black")
     }
 
     func testMissingScreenVideoThrowsError() {

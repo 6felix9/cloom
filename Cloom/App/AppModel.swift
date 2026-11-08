@@ -34,6 +34,8 @@ final class AppModel: ObservableObject {
     private var elapsedTask: Task<Void, Never>?
     private var muteIntervals: [MuteInterval] = []
     private var activeMuteStartSeconds: Double?
+    /// Width ÷ height of the frame the bubble is clamped to, so every clamp agrees with the panel's.
+    private var overlayAspectRatio: Double = 1
 
     init(
         permissionChecker: PermissionChecking,
@@ -154,6 +156,7 @@ final class AppModel: ObservableObject {
         warnings = []
         muteIntervals = []
         activeMuteStartSeconds = nil
+        overlayAspectRatio = 1
         let recordingSettings = settings
         activeRecordingSettings = recordingSettings
         overlayState.shape = recordingSettings.overlayShape
@@ -164,14 +167,22 @@ final class AppModel: ObservableObject {
         do {
             try await sessionController.start(configuration: RecordingSessionConfiguration(
                 source: source,
-                settings: recordingSettings
+                settings: recordingSettings,
+                contentSize: LiveCaptureGeometry.liveFrame(for: source)?.size
             ))
             if recordingSettings.includeMicrophone, isMicrophoneMuted {
                 activeMuteStartSeconds = 0.0
             }
             if recordingSettings.includeCamera {
+                // Resolved after the countdown inside start(), since the window may have moved since it was picked.
+                let liveFrame = LiveCaptureGeometry.liveFrame(for: source)
+                let captureFrame = liveFrame ?? source.presentationFrame
+                LiveCaptureGeometry.logger.info(
+                    "Bubble frame \(String(describing: captureFrame), privacy: .public) (\(liveFrame == nil ? "pick-time fallback" : "live", privacy: .public))"
+                )
+                overlayAspectRatio = CameraBubbleGeometry.aspectRatio(of: captureFrame)
                 bubblePanel.show(session: sessionController.previewSession, state: overlayState,
-                                 captureFrame: source.presentationFrame) { [weak self] state in
+                                 captureFrame: captureFrame) { [weak self] state in
                     self?.applyOverlay(state)
                 }
             }
@@ -296,7 +307,7 @@ final class AppModel: ObservableObject {
     }
 
     private func applyOverlay(_ state: OverlayState) {
-        let state = state.clamped()
+        let state = state.clamped(aspectRatio: overlayAspectRatio)
         overlayState = state
         guard let epoch = sessionController.epoch else { return }
         let now = CMClockGetTime(CMClockGetHostTimeClock()).seconds

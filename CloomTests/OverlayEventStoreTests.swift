@@ -18,6 +18,43 @@ final class OverlayEventStoreTests: XCTestCase {
         )
     }
 
+    func testClampOnWideFrameLetsBubbleReachHorizontalEdges() {
+        // A large bubble spans 0.25 of the short edge, so on 16:9 it spans 0.25 × 9/16 of the width.
+        let state = OverlayState(centerX: 0.01, centerY: 0.99, size: .large, shape: .circle, isVisible: true)
+
+        XCTAssertEqual(
+            state.clamped(aspectRatio: 16.0 / 9.0),
+            OverlayState(centerX: 0.0703125, centerY: 0.875, size: .large, shape: .circle, isVisible: true)
+        )
+    }
+
+    func testClampOnTallFrameLetsBubbleReachVerticalEdges() {
+        let state = OverlayState(centerX: 0.99, centerY: 0.01, size: .large, shape: .circle, isVisible: true)
+
+        XCTAssertEqual(
+            state.clamped(aspectRatio: 0.5),
+            OverlayState(centerX: 0.875, centerY: 0.0625, size: .large, shape: .circle, isVisible: true)
+        )
+    }
+
+    func testClampTreatsInvalidAspectRatioAsSquare() {
+        let state = OverlayState(centerX: 0, centerY: 1, size: .large, shape: .circle, isVisible: true)
+
+        XCTAssertEqual(state.clamped(aspectRatio: 0), state.clamped())
+        XCTAssertEqual(state.clamped(aspectRatio: .nan), state.clamped())
+    }
+
+    func testStoreClampsToItsContentAspectRatio() throws {
+        let url = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = try OverlayEventStore(fileURL: url, initialState: .default, aspectRatio: 16.0 / 9.0)
+
+        let atLeftEdge = OverlayState(centerX: 0, centerY: 0.5, size: .large, shape: .circle, isVisible: true)
+        try store.append(state: atLeftEdge, at: 1)
+
+        XCTAssertEqual(store.events.last?.state.centerX, 0.0703125)
+    }
+
     func testStoreCoalescesDuplicatesResolvesLatestStateAndPersistsAcceptedEvents() throws {
         let url = temporaryFileURL()
         defer { try? FileManager.default.removeItem(at: url) }

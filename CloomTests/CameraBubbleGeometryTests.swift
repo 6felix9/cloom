@@ -13,6 +13,15 @@ final class CameraBubbleGeometryTests: XCTestCase {
         )
     }
 
+    func testFrameOnWideCaptureCanSitFlushAgainstLeftEdge() {
+        let captureFrame = CGRect(x: 1920, y: 100, width: 1600, height: 900)
+        let state = OverlayState(centerX: 0, centerY: 0.5, size: .large, shape: .circle, isVisible: true)
+
+        let frame = CameraBubbleGeometry.frame(state: state, in: captureFrame)
+
+        XCTAssertEqual(frame.minX, captureFrame.minX, accuracy: 0.001)
+    }
+
     func testDraggedCenterNormalizesAndClamps() {
         let captureFrame = CGRect(x: 0, y: 0, width: 1000, height: 800)
         XCTAssertEqual(

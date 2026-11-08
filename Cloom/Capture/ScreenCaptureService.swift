@@ -33,7 +33,8 @@ final class ScreenCaptureService: ScreenCapturing {
         systemAudioTrack = audio
         let receiver = ScreenStreamReceiver(screen: screen, microphone: microphone, audio: audio)
         self.receiver = receiver
-        let stream = SCStream(filter: selection.filter, configuration: configuration, delegate: receiver)
+        let filter = await captureFilter(for: selection)
+        let stream = SCStream(filter: filter, configuration: configuration, delegate: receiver)
         self.stream = stream
         do {
             try stream.addStreamOutput(receiver, type: .screen, sampleHandlerQueue: screen.queue)
@@ -60,7 +61,7 @@ final class ScreenCaptureService: ScreenCapturing {
                 try? await stream.stopCapture()
                 configuration.capturesAudio = false
                 let fallback = ScreenStreamReceiver(screen: screen, microphone: microphone, audio: nil)
-                let retry = SCStream(filter: selection.filter, configuration: configuration, delegate: fallback)
+                let retry = SCStream(filter: filter, configuration: configuration, delegate: fallback)
                 self.receiver = fallback
                 self.stream = retry
                 try retry.addStreamOutput(fallback, type: .screen, sampleHandlerQueue: screen.queue)
@@ -73,6 +74,26 @@ final class ScreenCaptureService: ScreenCapturing {
             // The controller calls stop as well; detach first so cleanup remains idempotent.
             _ = await finalizeCapture()
             throw error
+        }
+    }
+
+    /// The picker's display filter still captures Cloom's own windows (the picker only hides them from the list),
+    /// which would burn the live camera panel into the screen track under the composited bubble.
+    private func captureFilter(for selection: any ScreenCaptureSelection) async -> SCContentFilter {
+        guard selection.kind == .display, #available(macOS 15.2, *),
+              let display = selection.filter.includedDisplays.first else { return selection.filter }
+        do {
+            // Current-process content needs no TCC consent, so it does not trigger the private window picker prompt.
+            let content = try await SCShareableContent.currentProcess
+            let processID = ProcessInfo.processInfo.processIdentifier
+            guard let cloom = content.applications.first(where: { $0.processID == processID }) else {
+                warn("Cloom's windows may appear in the recording: it is missing from shareable content")
+                return selection.filter
+            }
+            return SCContentFilter(display: display, excludingApplications: [cloom], exceptingWindows: [])
+        } catch {
+            warn("Cloom's windows may appear in the recording: \(error.localizedDescription)")
+            return selection.filter
         }
     }
 
