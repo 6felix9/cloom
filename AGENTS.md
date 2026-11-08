@@ -40,7 +40,9 @@ Cloom/
 ├── Capture/
 │   ├── CaptureDeviceDiscovery.swift  # Enumerates cameras, microphones, and screens
 │   ├── CaptureDeviceOption.swift     # Device models and identifiers
-│   ├── CaptureSourceSelection.swift  # Selected source state model
+│   ├── CaptureSourceSelection.swift  # Selected source state model (+ display/window target ID)
+│   ├── CaptureFrameResolver.swift    # Resolves the captured display/window frame in AppKit coordinates
+│   ├── LiveCaptureGeometry.swift     # Live NSScreen / CGWindowList lookups feeding the resolver
 │   ├── CameraCaptureService.swift    # AVCaptureSession camera pipeline
 │   ├── ScreenCaptureService.swift    # ScreenCaptureKit display & window capture
 │   ├── ScreenSourcePicker.swift      # System display/window picker integration

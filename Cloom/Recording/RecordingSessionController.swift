@@ -63,6 +63,11 @@ struct RecordingSessionConfiguration {
         self.settings = settings
         self.contentSize = contentSize ?? source.contentRect.size
     }
+
+    /// Width ÷ height of the captured content, which the overlay's normalized coordinates refer to.
+    var contentAspectRatio: Double {
+        contentSize.height > 0 ? Double(contentSize.width / contentSize.height) : 1
+    }
 }
 
 enum RecordingSessionError: Error, LocalizedError {
@@ -130,7 +135,11 @@ final class RecordingSessionController {
             var initialOverlay = OverlayState.default
             initialOverlay.shape = configuration.settings.overlayShape
             initialOverlay.size = configuration.settings.overlaySize
-            overlayStore = try OverlayEventStore(fileURL: workspace.overlayURL, initialState: initialOverlay)
+            overlayStore = try OverlayEventStore(
+                fileURL: workspace.overlayURL,
+                initialState: initialOverlay,
+                aspectRatio: configuration.contentAspectRatio
+            )
             if configuration.settings.includeCamera,
                configuration.settings.cameraDeviceID?.isEmpty != false {
                 throw RecordingSessionError.missingCamera

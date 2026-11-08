@@ -7,8 +7,12 @@ enum CameraBubbleGeometry {
         min(captureFrame.width, captureFrame.height) * CGFloat(size.presetFraction)
     }
 
+    static func aspectRatio(of captureFrame: CGRect) -> Double {
+        captureFrame.height > 0 ? Double(captureFrame.width / captureFrame.height) : 1
+    }
+
     static func frame(state: OverlayState, in captureFrame: CGRect) -> CGRect {
-        let state = state.clamped()
+        let state = state.clamped(aspectRatio: aspectRatio(of: captureFrame))
         let diameter = diameter(for: state.size, in: captureFrame)
         let center = CGPoint(
             x: captureFrame.minX + captureFrame.width * state.centerX,
@@ -39,11 +43,14 @@ final class CameraBubblePanelController: NSObject {
     private var moveObserver: NSObjectProtocol?
     private var applyingFrame = false
 
+    var panelFrame: CGRect? { panel?.frame }
+
+    /// `captureFrame` is the captured display or window in AppKit global coordinates; the bubble stays inside it.
     func show(session: AVCaptureSession, state: OverlayState, captureFrame: CGRect,
               onStateChange: @escaping (OverlayState) -> Void) {
         close()
         self.captureFrame = captureFrame
-        self.state = state.clamped()
+        self.state = clamped(state)
         self.onStateChange = onStateChange
 
         let panel = NSPanel(contentRect: CameraBubbleGeometry.frame(state: self.state, in: captureFrame),
@@ -67,7 +74,7 @@ final class CameraBubblePanelController: NSObject {
     }
 
     func update(state: OverlayState) {
-        self.state = state.clamped()
+        self.state = clamped(state)
         guard let panel else { return }
         applyingFrame = true
         panel.setFrame(CameraBubbleGeometry.frame(state: self.state, in: captureFrame), display: true, animate: true)
@@ -86,15 +93,24 @@ final class CameraBubblePanelController: NSObject {
 
     private func panelDidMove() {
         guard !applyingFrame, let panel else { return }
-        let center = CGPoint(x: panel.frame.midX, y: panel.frame.midY)
+        handleDrag(toCenter: CGPoint(x: panel.frame.midX, y: panel.frame.midY))
+    }
+
+    /// Re-normalizes a dragged bubble and snaps it back inside the captured frame.
+    func handleDrag(toCenter center: CGPoint) {
+        guard let panel else { return }
         let normalized = CameraBubbleGeometry.normalizedCenter(for: center, size: state.size, in: captureFrame)
         state.centerX = normalized.x
         state.centerY = normalized.y
-        state = state.clamped()
+        state = clamped(state)
         applyingFrame = true
         panel.setFrameOrigin(CameraBubbleGeometry.frame(state: state, in: captureFrame).origin)
         applyingFrame = false
         onStateChange?(state)
+    }
+
+    private func clamped(_ state: OverlayState) -> OverlayState {
+        state.clamped(aspectRatio: CameraBubbleGeometry.aspectRatio(of: captureFrame))
     }
 
     private func applyAppearance() {

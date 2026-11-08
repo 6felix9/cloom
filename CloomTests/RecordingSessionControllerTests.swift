@@ -42,6 +42,19 @@ final class RecordingSessionControllerTests: XCTestCase {
         XCTAssertEqual(fixture.screen.configuration?.height, 1080)
     }
 
+    func testOverlayStoreClampsToCapturedContentAspectRatio() async throws {
+        let fixture = try Fixture()
+        defer { fixture.removeWorkspace() }
+
+        try await fixture.controller.start(configuration: RecordingSessionConfiguration(
+            source: SessionTestScreenSelection(),
+            settings: .fixture,
+            contentSize: CGSize(width: 1600, height: 800)
+        ))
+
+        XCTAssertEqual(fixture.controller.overlayStore?.aspectRatio, 2)
+    }
+
     func testScreenStreamFallsBackToSourceContentRectSize() async throws {
         let fixture = try Fixture()
         defer { fixture.removeWorkspace() }
