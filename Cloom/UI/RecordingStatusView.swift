@@ -22,8 +22,8 @@ struct RecordingStatusView: View {
             "Ready"
         case .preparing:
             "Preparing recording"
-        case .countdown:
-            "Starting in 3…"
+        case let .countdown(remaining):
+            "Starting in \(remaining)…"
         case .recording:
             "Recording"
         case .stopping:

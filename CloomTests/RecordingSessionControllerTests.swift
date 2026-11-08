@@ -28,16 +28,18 @@ final class RecordingSessionControllerTests: XCTestCase {
         XCTAssertTrue(fixture.controller.workspace === fixture.factory.workspace)
     }
 
-    func testCountdownHoldsCaptureUntilSleeperCompletes() async throws {
+    func testCountdownTicksThreeTwoOneBeforeStartingCapture() async throws {
         let sleeper = ControlledCountdownSleeper()
         let fixture = try Fixture(sleeper: sleeper)
         defer { fixture.removeWorkspace() }
         let start = Task { try await fixture.controller.start(configuration: .fixture) }
-        await sleeper.waitUntilSleeping()
 
-        XCTAssertEqual(fixture.coordinator.phase, .countdown)
-        XCTAssertTrue(fixture.order.events.isEmpty)
-        await sleeper.resume()
+        for remaining in [3, 2, 1] {
+            await sleeper.waitUntilSleeping()
+            XCTAssertEqual(fixture.coordinator.phase, .countdown(remaining: remaining))
+            XCTAssertTrue(fixture.order.events.isEmpty)
+            await sleeper.resume()
+        }
         try await start.value
         XCTAssertEqual(fixture.coordinator.phase, .recording)
     }
@@ -225,11 +227,11 @@ private struct FixedRecordingClock: RecordingClock {
 }
 
 private struct ImmediateCountdownSleeper: CountdownSleeping {
-    func sleepForCountdown() async throws {}
+    func sleepForCountdownTick() async throws {}
 }
 
 private struct FailingCountdownSleeper: CountdownSleeping {
-    func sleepForCountdown() async throws { throw CancellationError() }
+    func sleepForCountdownTick() async throws { throw CancellationError() }
 }
 
 private actor ControlledCountdownSleeper: CountdownSleeping {
@@ -237,7 +239,7 @@ private actor ControlledCountdownSleeper: CountdownSleeping {
     private var entered: CheckedContinuation<Void, Never>?
     private var completion: CheckedContinuation<Void, Never>?
 
-    func sleepForCountdown() async throws {
+    func sleepForCountdownTick() async throws {
         await withCheckedContinuation { continuation in
             completion = continuation
             sleeping = true
@@ -251,7 +253,7 @@ private actor ControlledCountdownSleeper: CountdownSleeping {
         await withCheckedContinuation { entered = $0 }
     }
 
-    func resume() { completion?.resume(); completion = nil }
+    func resume() { sleeping = false; completion?.resume(); completion = nil }
 }
 
 private actor ControlledStopGate {

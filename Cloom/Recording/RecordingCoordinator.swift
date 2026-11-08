@@ -12,15 +12,22 @@ final class RecordingCoordinator: ObservableObject {
         phase = .preparing
     }
 
-    func beginCountdown() throws {
-        guard phase == .preparing else {
+    func beginCountdown(seconds: Int) throws {
+        guard phase == .preparing, seconds > 0 else {
             throw invalidTransition("beginCountdown")
         }
-        phase = .countdown
+        phase = .countdown(remaining: seconds)
+    }
+
+    func tickCountdown() throws {
+        guard case let .countdown(remaining) = phase, remaining > 1 else {
+            throw invalidTransition("tickCountdown")
+        }
+        phase = .countdown(remaining: remaining - 1)
     }
 
     func beginRecording() throws {
-        guard phase == .countdown else {
+        guard case .countdown = phase else {
             throw invalidTransition("beginRecording")
         }
         phase = .recording

@@ -14,21 +14,38 @@ struct RecordingControlVisibility: Equatable {
 
 struct RecordingControlsView: View {
     @ObservedObject var model: AppModel
+    // Observed directly: SwiftUI does not forward a nested ObservableObject's
+    // changes through `model`, so reading the phase via `model` never redraws.
+    @ObservedObject private var coordinator: RecordingCoordinator
+
+    init(model: AppModel) {
+        self.model = model
+        self.coordinator = model.recordingCoordinator
+    }
 
     var body: some View {
         VStack(spacing: 22) {
-            Image(systemName: "record.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.red)
-            Text(timeText).font(.system(.largeTitle, design: .monospaced).bold())
-            RecordingStatusView(coordinator: model.recordingCoordinator)
+            if case let .countdown(remaining) = coordinator.phase {
+                Text("\(remaining)")
+                    .font(.system(size: 96, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.default, value: remaining)
+                    .accessibilityLabel("Recording starts in \(remaining)")
+            } else {
+                Image(systemName: "record.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.red)
+                Text(timeText).font(.system(.largeTitle, design: .monospaced).bold())
+            }
+            RecordingStatusView(coordinator: coordinator)
 
             controls
 
             Button(role: .destructive) {
                 Task { await model.stopRecording() }
             } label: {
-                if model.recordingCoordinator.phase == .stopping {
+                if coordinator.phase == .stopping {
                     HStack {
                         ProgressView().controlSize(.small)
                         Text("Stopping…")
@@ -40,7 +57,7 @@ struct RecordingControlsView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(model.recordingCoordinator.phase != .recording)
+            .disabled(coordinator.phase != .recording)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(40)

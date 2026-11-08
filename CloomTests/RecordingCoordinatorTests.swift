@@ -8,7 +8,7 @@ final class RecordingCoordinatorTests: XCTestCase {
         let output = URL(fileURLWithPath: "/tmp/cloom.mp4")
 
         try coordinator.beginPreparing()
-        try coordinator.beginCountdown()
+        try coordinator.beginCountdown(seconds: 3)
         try coordinator.beginRecording()
         try coordinator.beginStopping()
         try coordinator.beginExporting()
@@ -24,13 +24,41 @@ final class RecordingCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.phase, .idle)
 
         try coordinator.beginPreparing()
-        try coordinator.beginCountdown()
+        try coordinator.beginCountdown(seconds: 3)
         try coordinator.beginRecording()
         try coordinator.beginStopping()
 
         XCTAssertEqual(coordinator.phase, .stopping)
         XCTAssertThrowsError(try coordinator.beginStopping())
         XCTAssertEqual(coordinator.phase, .stopping)
+    }
+
+    func testCountdownTicksDownToOneThenRecords() throws {
+        let coordinator = RecordingCoordinator()
+        try coordinator.beginPreparing()
+
+        try coordinator.beginCountdown(seconds: 3)
+        XCTAssertEqual(coordinator.phase, .countdown(remaining: 3))
+        try coordinator.tickCountdown()
+        XCTAssertEqual(coordinator.phase, .countdown(remaining: 2))
+        try coordinator.tickCountdown()
+        XCTAssertEqual(coordinator.phase, .countdown(remaining: 1))
+        XCTAssertThrowsError(try coordinator.tickCountdown())
+        XCTAssertEqual(coordinator.phase, .countdown(remaining: 1))
+
+        try coordinator.beginRecording()
+        XCTAssertEqual(coordinator.phase, .recording)
+    }
+
+    func testCountdownRejectsInvalidStartsAndTicks() throws {
+        let coordinator = RecordingCoordinator()
+
+        XCTAssertThrowsError(try coordinator.tickCountdown())
+        XCTAssertEqual(coordinator.phase, .idle)
+
+        try coordinator.beginPreparing()
+        XCTAssertThrowsError(try coordinator.beginCountdown(seconds: 0))
+        XCTAssertEqual(coordinator.phase, .preparing)
     }
 
     func testInvalidTransitionPreservesCurrentPhase() {

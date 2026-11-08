@@ -2,6 +2,7 @@ import AVFoundation
 import CoreMedia
 import CoreVideo
 import XCTest
+@testable import Cloom
 
 // Short synthetic media for timeline tests. Gray levels and tones make alignment observable after encoding.
 enum MediaFixtures {
